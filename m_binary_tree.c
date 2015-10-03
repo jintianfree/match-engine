@@ -1,3 +1,5 @@
+#include <string.h>
+#include <assert.h>
 #include "m_binary_tree.h"
 
 int m_binary_tree_insert_left(
@@ -38,24 +40,63 @@ int m_binary_tree_is_leaf_node(struct m_binary_tree_node *node)
 	return (node->left == NULL && node->right == NULL);
 }
 
-void m_binary_tree_traver_LDR(
+int m_binary_tree_traver_LDR(
 	struct m_binary_tree_node *root, traver_call_back call, void *arg)
 {
 	if(m_binary_tree_is_leaf_node(root)) {
-		call(root, arg);
-		return;
+		if(call(root, arg) < 0) {
+			return -1;
+		} else {
+			return 0;
+		}
 	}
 
 	if(root->left) {
-		m_binary_tree_traver_LDR(root->left, call, arg);
+		if(m_binary_tree_traver_LDR(root->left, call, arg) < 0) {
+			return -1;
+		}
 	}
 
-	call(root, arg);
+	if(call(root, arg) < 0) {
+		return -1;
+	}
 
 	if(root->right) {
-		m_binary_tree_traver_LDR(root->right, call, arg);
+		if(m_binary_tree_traver_LDR(root->right, call, arg) < 0) {
+			return -1;
+		}
 	}
 
-	return;
+	return 0;
+}
+
+int m_binary_tree_traver_LRD(
+	struct m_binary_tree_node *root, traver_call_back call, void *arg)
+{
+	if(m_binary_tree_is_leaf_node(root)) {
+		if(call(root, arg) < 0) {
+			return -1;
+		} else {
+			return 0;
+		}
+	}
+
+	if(root->left) {
+		if(m_binary_tree_traver_LRD(root->left, call, arg) < 0) {
+			return -1;
+		}
+	}
+
+	if(root->right) {
+		if(m_binary_tree_traver_LRD(root->right, call, arg) < 0) {
+			return -1;
+		}
+	}
+
+	if(call(root, arg) < 0) {
+		return -1;
+	}
+
+	return 0;
 }
 
