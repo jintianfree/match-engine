@@ -3,7 +3,8 @@
 
 int op_int32_equal(void *var_addr, int var_len, void *value_addr, int value_len)
 {
-	return (int32_t *)var_addr == (int32_t *)value_addr;
+	printf("%d %d \n", *(int32_t *)var_addr, *(int32_t *)value_addr);
+	return *(int32_t *)var_addr == *(int32_t *)value_addr;
 }
 
 int op_string_equal(void *var_addr, int var_len, void *value_addr, int value_len)
@@ -45,7 +46,7 @@ void parse_sentence_func(const char *sentence, union sentence_info *info)
 	strncpy(buf, sentence, 2048);
 	buf[2047] = 0;
 
-	printf("%s \n", sentencd);
+	printf("%s \n", sentence);
 	char *op = strtok(buf, "(:)");
 	printf("op %s \n", op);
 	char *var_name = strtok(NULL, "(:)");
@@ -109,8 +110,12 @@ int main()
 {
 	struct m_logic_expression exp;
 	
-	m_logic_expression_init(&exp, "equal(int_var:0)", parse_sentence_func);
-	//m_logic_expression_evaluate(&exp, sentence_value_func);
+	m_logic_expression_init(&exp, "equal(int_var:0)|!equal(int_var:0)", parse_sentence_func);
+	int_var = 0;
+	m_logic_expression_evaluate(&exp, sentence_value_func);
+
+	int_var = 1;
+	m_logic_expression_evaluate(&exp, sentence_value_func);
 	//m_logic_expression_clean(&exp, NULL);
 	return 0;
 }
