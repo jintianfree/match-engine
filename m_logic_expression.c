@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifndef _WIN32
-# include <alloca.h>
-#endif
 #include <assert.h>
 #include "m_common.h"
 #include "m_log.h"
@@ -116,7 +113,7 @@ static int expression_to_infix_sentence(const char *exp, char *s[], int size)
 	char *buf = NULL;
 
 	end = strlen(exp);
-	buf = alloca(end);	/* alloc buf in stack, neendn't free */
+	buf = malloc(end);	/* alloc buf in stack, neendn't free */
 	if(buf == NULL) {
 		eno = -1;
 		goto err;
@@ -160,6 +157,9 @@ static int expression_to_infix_sentence(const char *exp, char *s[], int size)
 		s[n++] = strdup(buf + cur);
 	}
 
+		
+	free(buf);
+
 	return n;
 err:
 	switch(eno) {
@@ -174,6 +174,11 @@ err:
 		}
 		ERROR("could not contain so many sentence! \n");
 		break;
+	}
+
+	if(buf) {
+		free(buf);
+		buf = NULL;
 	}
 
 	return eno;
@@ -324,6 +329,10 @@ static struct m_logic_sentence *new_logic_sentence()
 
 	return s;
 err:
+	switch(eno) {
+	case -1:
+		break;
+	}
 	return NULL;
 }
 
