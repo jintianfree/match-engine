@@ -130,16 +130,17 @@ int main()
 	struct m_logic_expression exp;
 	
 	int int_var = 0;
+	int  int_var_len;
 	char *string_var = "xx";
 	int string_var_len = strlen(string_var);
 
 	struct var_descr vars[] = {
-		{"int_var", &int_var, NULL, 0},
+		{"int_var", &int_var, &int_var_len, 0},
 		{"string_var", string_var, &string_var_len, 1},
 		{"", NULL, NULL, 0},
 	};
 
-	m_logic_expression_init(&exp, "equal(int_var:0)|!equal(int_var:0)", parse_sentence_func, NULL);
+	m_logic_expression_init(&exp, "equal(int_var:0)|!equal(int_var:0)", parse_sentence_func, vars);
 	int_var = 0;
 	m_logic_expression_evaluate(&exp, sentence_value_func);
 
