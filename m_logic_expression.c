@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <alloca.h>
+#ifndef _WIN32
+# include <alloca.h>
+#endif
 #include <assert.h>
+#include "m_common.h"
 #include "m_log.h"
 #include "m_stack.h"
 #include "m_binary_tree.h"
