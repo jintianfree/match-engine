@@ -113,7 +113,7 @@ static int expression_to_infix_sentence(const char *exp, char *s[], int size)
 	char *buf = NULL;
 
 	end = strlen(exp);
-	buf = malloc(end);	/* alloc buf in stack, neendn't free */
+	buf = malloc(end);
 	if(buf == NULL) {
 		eno = -1;
 		goto err;
@@ -481,8 +481,9 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 		s[j++] = n->sentence[i];
 	}
 
-	parse_sentence_func_p func = (parse_sentence_func_p)arg;
-	func(s, &n->info);
+	struct {parse_sentence_func_p func; void *arg;} *args = arg;
+	parse_sentence_func_p func = (parse_sentence_func_p)args->func;
+	func(s, &n->info, args->arg);
 
 	free(s);
 
@@ -562,7 +563,7 @@ end:
 }
 
 int m_logic_expression_init(struct m_logic_expression *lexp, 
-		const char *exp, parse_sentence_func_p func)
+		const char *exp, parse_sentence_func_p func, void *arg)
 {
 	assert(lexp && exp);
 
@@ -572,7 +573,10 @@ int m_logic_expression_init(struct m_logic_expression *lexp,
 	if(s == NULL) {
 		goto err;
 	}
-	m_binary_tree_traver_LDR(&s->node, parse_sentence, func);
+
+	struct {parse_sentence_func_p func; void *arg;} args = {func, arg};
+
+	m_binary_tree_traver_LDR(&s->node, parse_sentence, &args);
 
 	lexp->root = s;
 
