@@ -1,24 +1,5 @@
 
-
-enum m_type_enum {
-	MT_UINT8 = 0,
-	MT_UINT16,
-	MT_UINT32,
-	MT_UINT64,
-	MT_INT8,
-	MT_INT16,
-	MT_INT32,
-	MT_INT64,
-	MT_FLOAT,
-	MT_DOUBLE,
-	MT_ABSOLUTE_TIME,
-	MT_RELATIVE_TIME,
-	MT_STRING,
-	MT_BYTES,
-	MT_IPv4,
-	MT_IPv6,
-	MT_NUM_TYPES /* last item number plus one */
-};
+#include "m_variable.h"
 
 typedef int (*op_func_p)();
 typedef int (*parse_func_p)();
