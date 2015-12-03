@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "m_stack.h"
 
-int main(int argc, char *argv[])
+int main()
 {
 	struct m_stack stack;
 	int i = 0;

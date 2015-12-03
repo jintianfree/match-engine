@@ -1,7 +1,8 @@
 #include "../m_logic_expression.c"
 
-void parse_sentence_func(const char *sentence, union sentence_info *info)
+void parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
 {
+	(void)arg;
 	if(sentence[0] == '0') {
 		info->value = 0;
 	} else {
@@ -54,7 +55,7 @@ int main()
 
 	int i = 0;
 	while(right_expression[i].expression != NULL) {
-		assert(m_logic_expression_init(&exp, right_expression[i].expression, parse_sentence_func) == 0);
+		assert(m_logic_expression_init(&exp, right_expression[i].expression, parse_sentence_func, NULL) == 0);
 		assert(m_logic_expression_evaluate(&exp, sentence_value_func) == right_expression[i].value);
 		m_logic_expression_clean(&exp, NULL);
 		i++;
@@ -62,7 +63,7 @@ int main()
 
 	i = 0;
 	while(wrong_expression[i].expression != NULL) {
-		assert(m_logic_expression_init(&exp, wrong_expression[i].expression, parse_sentence_func) < 0);
+		assert(m_logic_expression_init(&exp, wrong_expression[i].expression, parse_sentence_func, NULL) < 0);
 		i++;
 	}
 

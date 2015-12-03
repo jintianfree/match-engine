@@ -113,7 +113,7 @@ static int expression_to_infix_sentence(const char *exp, char *s[], int size)
 	char *buf = NULL;
 
 	end = strlen(exp);
-	buf = malloc(end);
+	buf = malloc(end + 1); /* +1 for \0 */
 	if(buf == NULL) {
 		eno = -1;
 		goto err;
@@ -467,7 +467,7 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 	int i = 0;
 	int j = 0;
 	int len = strlen(n->sentence);
-	char *s = malloc(len);
+	char *s = malloc(len + 1);	/* +1 for \0 */
 	if(s == NULL) {
 		ERROR("couldn't malloc enough memory to contain(%s) \n", n->sentence);
 		goto end;
@@ -480,6 +480,7 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 	
 		s[j++] = n->sentence[i];
 	}
+	s[j] = 0;
 
 	struct {parse_sentence_func_p func; void *arg;} *args = arg;
 	parse_sentence_func_p func = (parse_sentence_func_p)args->func;

@@ -1,10 +1,27 @@
+#include <stdint.h>
 #include "../m_logic_expression.c"
 
 typedef int (*op_func_p)(void *var_addr, int var_len, void *value_addr, int value_len);
 
+struct var_descr {
+	char var_name[64];
+	void *var_addr;
+	int *var_len;
+	int var_type;	/* 0 int 1 string */
+};
+
+struct op_info {
+	struct var_descr *var;
+	void *value_addr;
+	int value_len;
+	op_func_p op_func;
+};
+
 int op_int32_equal(void *var_addr, int var_len, void *value_addr, int value_len)
 {
-	printf("%d %d \n", *(int32_t *)var_addr, *(int32_t *)value_addr);
+	(void)var_len;
+	(void)value_len;
+
 	return *(int32_t *)var_addr == *(int32_t *)value_addr;
 }
 
@@ -25,21 +42,6 @@ int op_string_contain(void *var_addr, int var_len, void *value_addr, int value_l
 
 	return (strstr((char *)var_addr, (char *)value_addr) != NULL);
 }
-
-struct var_descr {
-	char var_name[64];
-	void *var_addr;
-	int *var_len;
-	int var_type;	/* 0 int 1 string */
-};
-
-struct op_info {
-	struct var_descr *var;
-	void *value_addr;
-	int value_len;
-	op_func_p op_func;
-};
-
 
 /* parse equal(int_var:0)  equal(string_var:abc) contain(string_var:abc) */
 void parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
@@ -131,8 +133,8 @@ int main()
 	
 	int int_var = 0;
 	int  int_var_len;
-	char *string_var = "xx";
-	int string_var_len = strlen(string_var);
+	char string_var[1024];
+	int string_var_len = 0;
 
 	struct var_descr vars[] = {
 		{"int_var", &int_var, &int_var_len, 0},
@@ -140,12 +142,16 @@ int main()
 		{"", NULL, NULL, 0},
 	};
 
-	m_logic_expression_init(&exp, "equal(int_var:0)|!equal(int_var:0)", parse_sentence_func, vars);
+	m_logic_expression_init(&exp, "(equal(int_var:0)|!equal(string_var:123))&(contain(string_var:2)|equal(int_var:1)", parse_sentence_func, vars);
 	int_var = 0;
+	strcpy(string_var, "123");
+	string_var_len = strlen(string_var);
+
 	m_logic_expression_evaluate(&exp, sentence_value_func);
 
 	int_var = 1;
 	m_logic_expression_evaluate(&exp, sentence_value_func);
-	//m_logic_expression_clean(&exp, NULL);
+	m_logic_expression_clean(&exp, NULL);
 	return 0;
 }
+
