@@ -38,6 +38,23 @@ struct m_operation m_op_equal = {
 		NULL,
 	},
 };
+
+/* op[][]:(value) */
+int m_operation_parse(const char *s)
+{
+	int len = 0;
+
+	len = strlen(s);
+
+	char *p = malloc(len + 1);
+
+	strcpy(p, s);
+	p[len] = 0;
+
+
+	strtok(p, "[:");
+}
+
 /* equal great little contain range null */
 
 int m_op_equal_uint8(void *var, int var_len, void *value, int value_len)
