@@ -10,49 +10,64 @@ struct m_operation {
 	op_func_p op_func[MT_NUM_TYPES];
 };
 
+
 struct m_op_descr {
 	int start;
 	int len;
 	int nocase;
 };
 
-struct m_operation m_op_equal = {
-	.name = "equal",
-	.parse_func = NULL,
-	.op_func = {
-		m_op_equal_uint8,
-		m_op_equal_uint16,
-		m_op_equal_uint32,
-		m_op_equal_uint64,
-		m_op_equal_int8,
-		m_op_equal_int16,
-		m_op_equal_int32,
-		m_op_equal_int64,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		m_op_equal_string,
-		m_op_equal_bytes,
-		NULL,
-		NULL,
-	},
+struct m_operation *m_ops[] = {
+	NULL;
 };
+
+struct m_variable *m_vars[] = {NULL};
+
+
 
 /* op[][]:(value) */
 int m_operation_parse(const char *s)
 {
 	int len = 0;
+	char *p = NULL;
+	struct m_operation *op = NULL;
+
+	assert(s);
 
 	len = strlen(s);
-
-	char *p = malloc(len + 1);
+	p = malloc(len + 1);	/* +1 for \0 */
+	if(p == NULL) {
+		goto err;
+	}
 
 	strcpy(p, s);
 	p[len] = 0;
 
+	char *op_name = strtok(p, "[:");
+	if(op_name == NULL) {
+		goto err;
+	}
 
-	strtok(p, "[:");
+	op = m_ops[0];
+	while(op != NULL) {
+		if(strcmp(op->name, op_name) == 0) {
+			break;
+		}
+	}
+
+	if(op) {
+		op->parse_func(s);
+	} else {
+	}
+
+	free(p);
+err:
+	if(p) {
+		free(p);
+		p = NULL;
+	}
+
+	return -1;
 }
 
 /* equal great little contain range null */
@@ -114,4 +129,28 @@ int m_op_equal_bytes(void *var, int var_len, void *value, int value_len)
 
 	return (memcmp(var, value, var_len) == 0);
 }
+
+
+struct m_operation m_op_equal = {
+	.name = "equal",
+	.parse_func = NULL,
+	.op_func = {
+		m_op_equal_uint8,
+		m_op_equal_uint16,
+		m_op_equal_uint32,
+		m_op_equal_uint64,
+		m_op_equal_int8,
+		m_op_equal_int16,
+		m_op_equal_int32,
+		m_op_equal_int64,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		m_op_equal_string,
+		m_op_equal_bytes,
+		NULL,
+		NULL,
+	},
+};
 

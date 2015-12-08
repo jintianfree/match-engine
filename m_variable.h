@@ -28,5 +28,4 @@ struct m_variable {
 	size_t *var_len;
 };
 
-
 #endif
