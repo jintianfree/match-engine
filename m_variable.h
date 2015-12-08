@@ -1,6 +1,8 @@
 #ifndef _M_VARIABLE_H_
 #define _M_VARIABLE_H_
 
+#include <stddef.h>
+
 enum m_var_type {
 	MT_UINT8 = 0,
 	MT_UINT16,
@@ -22,10 +24,20 @@ enum m_var_type {
 };
 
 struct m_variable {
-	enum m_var_type type;
 	char var_name[16];
+	enum m_var_type type;
 	void *var_addr;
 	size_t *var_len;
 };
+
+struct m_variable_list;
+
+
+int m_variable_list_register(struct m_variable vars[], int num);
+void m_variable_list_unregister(struct m_variable vars[], int num);
+void m_variable_list_print();
+
+extern struct m_variable_list *head;
+
 
 #endif
