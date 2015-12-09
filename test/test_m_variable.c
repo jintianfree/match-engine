@@ -6,6 +6,10 @@ int main()
 	int a;
 	size_t len;
 
+	void **p = NULL;
+
+	*p = 0x010;
+
 	struct m_variable vars[] = {
 		{"var1", MT_UINT8, (void *)&a, &len},
 		{"var2", MT_UINT8, (void *)&a, &len},

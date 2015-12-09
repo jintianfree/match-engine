@@ -122,3 +122,25 @@ void m_variable_list_print()
 	}
 }
 
+struct m_variable *name_2_var(struct m_variable_list *head, const char *name)
+{
+	int i = 0; 
+	struct m_variable *var = NULL;
+	struct m_variable_list *list = NULL;
+	
+	list = head;
+	while(list != NULL) {
+		for(i = 0; i < list->num; i++) {
+			var = &list->var[i];
+
+			if(strcmp(name, var->var_name) == 0) {
+				return var;
+			}
+		}
+		
+		list = list->next;
+	}
+
+	return NULL;
+}
+
