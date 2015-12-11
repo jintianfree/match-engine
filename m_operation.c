@@ -1,68 +1,86 @@
 
 #include "m_variable.h"
 
-typedef int (*op_func_p)();
-typedef int (*parse_func_p)();
-
-struct m_operator {
-	char name[16];
-	parse_func_p parse_func;
-	op_func_p op_func[MT_NUM_TYPES];
-};
-
-struct m_operator *m_ops[] = {
+struct m_operator *operators[] = {
 	NULL;
-};
-
-
-struct m_operation {
-	struct m_variable *var;
-	op_func_p *func;
-	void *value;
-	int value_len;
-	void *operator_option;
 };
 
 /* op(var_name[][]:value) */
 struct m_operation *m_operation_init(const char *s, struct m_variable_list *list)
 {
-	int len = 0;
+	int eno = 0;
 	char *p = NULL;
-	struct m_operator *op = NULL;
+	char *operator_name = NULL;
+	struct m_operator *operator = NULL;
+	struct m_operation *operation = NULL;
 
 	assert(s);
 
-	len = strlen(s);
-	p = malloc(len + 1);	/* +1 for \0 */
+	p = strdup(s);
 	if(p == NULL) {
+		eno = -1;
 		goto err;
 	}
 
-	strcpy(p, s);
-	p[len] = 0;
-
-	char *op_name = strtok(p, "(");
-	if(op_name == NULL) {
+	if((operator_name = strtok(p, "(")) == NULL)
+		eno = -2;
 		goto err;
 	}
 
-	op = m_ops[0];
-	while(op != NULL) {
-		if(strcmp(op->name, op_name) == 0) {
+	operator = operators;
+	while(operator != NULL) {
+		if(strcmp(operator->name, operator_name) == 0) {
 			break;
 		}
+
+		operator++;
 	}
 
-	if(op) {
-		op->parse_func(s);
-	} else {
+	if(!operator) {
+		eno = -3;
+		goto err;
 	}
 
-	free(p);
-err:
+	if((operation = malloc(sizeof(struct m_operation))) == NULL) {
+		eno = -4;
+		goto err;
+	}
+
+	operation->op = operator;
+	
+	if(operator->init(s, operation, list) != 0) {
+		eno = -5;
+		goto err;
+	}
+
 	if(p) {
 		free(p);
 		p = NULL;
+	}
+
+	return 0;
+err:
+	switch(eno) {
+	case -1:
+		break;
+	case -2:
+		break;
+	case -3:
+		break;
+	case -4:
+		break;
+	case -5:
+		break;
+	}
+
+	if(p) {
+		free(p);
+		p = NULL;
+	}
+
+	if(operation) {
+		free(operation);
+		operation = NULL;
 	}
 
 	return -1;

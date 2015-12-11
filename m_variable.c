@@ -1,100 +1,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include "m_common.h"
 #include "m_log.h"
 #include "m_variable.h"
 
-struct m_variable_list {
-	struct m_variable *var;
-	int num;
-	struct m_variable_list *prev;
-	struct m_variable_list *next;
-};
+void m_variable_list_insert(struct m_variable_list *head, struct m_variable_list *node);
+void m_variable_list_remove(struct m_variable_list *head, struct m_variable_list *node);
 
-struct m_variable_list *head = NULL;
-
-int m_variable_list_register(struct m_variable vars[], int num)
+int m_variable_list_register(struct m_variable_list *head, struct m_variable vars[])
 {
 	int i = 0; 
-	int j = 0;
 	int eno = 0;
+	struct m_variable_list *node = NULL;
 	struct m_variable *var = NULL;
-	struct m_variable_list *list = NULL;
-	
+
+	assert(head->prev == NULL);
 
 	/* check name, we don't allow two variable have same name. */
-	list = head;
-	while(list != NULL) {
-		for(i = 0; i < list->num; i++) {
-			var = &list->var[i];
+	node = head->next;
+	while(node != NULL) {
+		var = container_of(node, struct m_variable, node);
 
-			for(j = 0; j < num; j++) {
-				if(strcmp(vars[j].var_name, var->var_name) == 0) {
-					eno = -1;
-					goto err;
-				}
+		for(i = 0; vars[i].var_addr != NULL; i++) {
+			if(strcmp(vars[i].var_name, var->var_name) == 0) {
+				eno = -1;
+				goto err;
 			}
 		}
-		
-		list = list->next;
+
+		node = node->next;
 	}
 
-	list = malloc(sizeof(struct m_variable_list));
-	if(list == NULL) {
-		eno = -2;
-		goto err;
+	for(i = 0; vars[i].var_addr != NULL; i++) {
+		m_variable_list_insert(head, &vars[i].node);
 	}
-
-	list->var = vars;
-	list->num = num;
-	list->next = head;
-	list->prev = NULL;
-
-	if(head) {
-		head->prev = list;
-	}
-	head = list;
 
 	return 0;
 err:
 	switch(eno) {
 	case -1:
-		ERROR("variable name %s has registered, try to use a different name \n", vars[j].var_name);
-		break;
-	case -2:
-		ERROR("fail to malloc @%s:%d \n", __func__, __LINE__);
+		ERROR("variable name %s has registered, try to use a different name \n", vars->var_name);
 		break;
 	}
 
 	return -1;
 }
 
-void m_variable_list_unregister(struct m_variable vars[], int num)
+void m_variable_list_unregister(struct m_variable_list *head, struct m_variable vars[])
 {
-	struct m_variable_list *list = NULL;
-
-	list = head;
-	while(list != NULL) {
-		if(list->num == num && list->var == vars) {
-			if(list == head) {
-				head = list->next;
-			}
-
-
-			if(list->prev) {
-				list->prev->next = list->next;
-			}
-
-			if(list->next) {
-				list->next->prev = list->prev;
-			}
-
-			free(list);
-
-			break;
-		}
-
-		list = list->next;
+    int i = 0;
+    
+	for(i = 0; vars[i].var_addr != NULL; i++) {
+		m_variable_list_remove(head, &vars[i].node);
 	}
 
 	return;
@@ -102,45 +61,123 @@ void m_variable_list_unregister(struct m_variable vars[], int num)
 
 void m_variable_print(struct m_variable *var)
 {
-	printf("name: %s type: %d addr: %x len_addr: %x \n",
-			var->var_name, var->type, var->var_addr, var->var_len);
+	printf("name: %s type: %d ", var->var_name, var->real_type);
+	
+	void *p = NULL;
+
+	switch(var->store_type) {
+	case MST_ADDRESS:
+		p = var->var_addr;
+		break;
+	case MST_POINTER_ADDRESS:
+		p = *(void **)var->var_addr;
+		break;
+	}
+
+	switch(var->real_type) {
+    case MRT_UINT8:
+    case MRT_UINT16:
+	case MRT_UINT32:
+		printf("%u ", *(uint32_t *)p);
+		break;
+	case MRT_STRING:
+        nprintf((char *)p, *var->var_len);
+		break;
+    default:
+        break;
+	}
+    
+    printf("\n");
+    
+    return;
 }
 
-void m_variable_list_print()
+void m_variable_list_print(struct m_variable_list *head)
 {
-	int i = 0;
-	struct m_variable_list *list = NULL;
+    struct m_variable *var = NULL;
+	struct m_variable_list *node = NULL;
 
-	list = head;
+	assert(head->prev == NULL);
 
-	while(list != NULL) {
-		for(i = 0; i < list->num; i++) {
-			m_variable_print(&list->var[i]);
-		}
-
-		list = list->next;
-	}
+	node = head->next;
+    
+	while(node != NULL) {
+		var = container_of(node, struct m_variable, node);
+        m_variable_print(var);
+        node = node->next;
+    }
+    
+    return;
 }
 
 struct m_variable *name_2_var(struct m_variable_list *head, const char *name)
 {
-	int i = 0; 
-	struct m_variable *var = NULL;
-	struct m_variable_list *list = NULL;
-	
-	list = head;
-	while(list != NULL) {
-		for(i = 0; i < list->num; i++) {
-			var = &list->var[i];
+    struct m_variable *var = NULL;
+	struct m_variable_list *node = NULL;
 
-			if(strcmp(name, var->var_name) == 0) {
-				return var;
-			}
+	assert(head->prev == NULL);
+
+	node = head->next;
+    
+	while(node != NULL) {
+		var = container_of(node, struct m_variable, node);
+		if(strcmp(name, var->var_name) == 0) {
+			return var;
 		}
-		
-		list = list->next;
-	}
-
-	return NULL;
+        node = node->next;
+    }
+    
+    return NULL;
 }
 
+void m_variable_list_insert(struct m_variable_list *head, struct m_variable_list *node)
+{
+	assert(head->prev == NULL);
+
+	if(head->next) {
+		head->next->prev = node;
+	}
+	
+	node->prev = head;
+    node->next = head->next;
+    head->next = node;
+
+	return;
+}
+
+void m_variable_list_remove(struct m_variable_list *head, struct m_variable_list *node)
+{
+	assert(head->prev == NULL && head->next != NULL);
+    assert(node->prev != NULL);
+
+#if 1
+	/* check if the node belongs to this list */
+	struct m_variable_list *next = NULL; 
+
+	next = head->next;
+	while(next != NULL) {
+		if(next == node) {
+			break;
+		}
+		next = next->next;
+	}
+
+	if(node != next) {
+        goto err;
+    }
+#endif 
+
+	if(node->next) {
+		node->next->prev = node->prev;
+	}
+
+	node->prev->next = node->next;
+
+    node->prev = NULL;
+    node->next = NULL;
+    
+	return;
+err:
+    ERROR("you are removeing a node not belongs to a list \n");
+    return;
+}

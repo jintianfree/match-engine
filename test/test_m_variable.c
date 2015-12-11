@@ -4,26 +4,30 @@
 int main()
 {
 	int a;
-	size_t len;
+	char *p = NULL;
+    char array[] = {'a', 'b', 'c', '\0'};
+    p = array;
+    size_t len;
 
-	void **p = NULL;
-
-	*p = 0x010;
+    struct m_variable_list head = M_VARIABLE_LIST_NULL;
+    
+    len = 3;
 
 	struct m_variable vars[] = {
-		{"var1", MT_UINT8, (void *)&a, &len},
-		{"var2", MT_UINT8, (void *)&a, &len},
-		{"var3", MT_UINT8, (void *)&a, &len},
-		{"var4", MT_UINT8, (void *)&a, &len},
-		{"var5", MT_UINT8, (void *)&a, &len},
+		{"var1", MST_ADDRESS, MRT_UINT32, (void *)&a, &len, M_VARIABLE_LIST_NULL},
+		{"var2", MST_ADDRESS, MRT_STRING, (void *)array, &len, M_VARIABLE_LIST_NULL},
+		{"var3", MST_POINTER_ADDRESS, MRT_STRING, (void *)&p, &len, M_VARIABLE_LIST_NULL},
+		{"var4", MST_ADDRESS, MRT_UINT8, (void *)&a, &len, M_VARIABLE_LIST_NULL},
+		{"var5", MST_ADDRESS, MRT_UINT8, (void *)&a, &len, M_VARIABLE_LIST_NULL},
+        {"", 0, 0, NULL, NULL, M_VARIABLE_LIST_NULL},
 	};
 
-	m_variable_list_register(vars, 5);
-	m_variable_list_register(vars, 5);
-	m_variable_list_print();
-	m_variable_list_unregister(vars, 5);
-	m_variable_list_unregister(vars, 5);
-	m_variable_list_print();
+	m_variable_list_register(&head, vars);
+	m_variable_list_register(&head, vars);
+	m_variable_list_print(&head);
+	m_variable_list_unregister(&head, vars);
+	/* m_variable_list_unregister(&head, vars); */
+	m_variable_list_print(&head);
 
 	return 0;
 }
