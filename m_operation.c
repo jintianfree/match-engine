@@ -6,9 +6,11 @@
 #include "m_variable.h"
 #include "m_operation.h"
 #include "m_operator_equal.h"
+#include "m_operator_null.h"
 
 struct m_operator *operators[] = {
 	&operator_equal,
+	&operator_null,
 	NULL,
 };
 
@@ -40,11 +42,9 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 		goto err;
 	}
 
-	if((value = strtok(NULL, "(:)")) == NULL) {
-		eno = -2;
-		goto err;
-	}
-
+	/* value may be null eg: m_operator_null */
+	value = strtok(NULL, "(:)");
+    
 	char *o = strchr(var_name, '[');	
 	if(o != NULL) {
 		option = strdup(o);
@@ -112,8 +112,8 @@ err:
 		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
 		break;
 	case -6:
-		break;
 		ERROR("parse %s error \n", str);
+        break;
 	}
 
 	if(p) {

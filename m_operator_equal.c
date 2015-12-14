@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include "m_log.h"
 #include "m_variable.h"
 #include "m_operation.h"
@@ -12,9 +13,157 @@ struct equal_operator_option {
 	int case_sensitive;
 };
 
-int m_op_equal_uint32_value(struct m_operation *operation)
+
+int m_operator_equal_int(struct m_variable *var, const char *value, struct m_operation *operation)
+{
+	int eno = 0;
+	long long int lli = 0;
+	unsigned long long  int ulli = 0;
+
+	errno = 0;
+
+	switch(var->real_type) {
+	case MRT_UINT8:
+	case MRT_UINT16:
+	case MRT_UINT32:
+	case MRT_UINT64:
+		ulli = strtoull(value, NULL, 10);
+		operation->value_i = ulli;
+		operation->operator_option = NULL;
+		break;
+	case MRT_INT8:
+	case MRT_INT16:
+	case MRT_INT32:
+	case MRT_INT64:
+		lli = strtoll(value, NULL, 10);
+		operation->value_i = lli;
+		operation->operator_option = NULL;
+		break;
+	default:
+		break;
+	}
+
+
+	if(errno != 0) {
+		eno = -1;
+		goto err;
+	}
+
+	switch(var->real_type) {
+	case MRT_UINT8:
+		if(ulli > 0xff) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT16:
+		if(ulli > 0xffff) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT32:
+		if(ulli > 0xffffffff) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT64:
+		break;
+	case MRT_INT8:
+		if(lli > 0x7f || lli < -0x7f) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT16:
+		if(lli > 0x7fff || lli < -0x7fff) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT32:
+		if(lli > 0x7fffffff || lli < -0x7fffffff) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT64:
+		break;
+	default:
+		break;
+	}
+	
+	return 0;
+err:
+	switch(eno) {
+	case -1:
+		ERROR("parse value (%s) error \n", value);
+		break;
+	case -2:
+		ERROR("value (%s) overflow  type (%s) \n", value, m_real_type_2_str(var->real_type));
+		break;
+	}
+
+	return -1;
+}
+
+/* TODO: do not support option now! equal(var_name[][]: value) */
+int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
+{
+	(void)option;
+
+	int eno = 0;
+
+	if(value == NULL) {
+		eno = -1;
+		goto err;
+	}
+
+	operation->op = &operator_equal;
+	operation->var = var;
+
+	switch(var->real_type) {
+	case MRT_UINT8:
+	case MRT_INT8:
+	case MRT_UINT16:
+	case MRT_INT16:
+	case MRT_UINT32:
+	case MRT_INT32:
+	case MRT_UINT64:
+	case MRT_INT64:
+		if(m_operator_equal_int(var, value, operation) != 0) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	default:
+		eno = -3;
+		goto err;
+		break;
+	}
+
+
+	return 0;
+err:
+	switch(eno) {
+	case -1:
+		ERROR("null value \n");
+	        break;
+	case -2:
+		break;
+	case -3:
+		ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
+		break;
+	}
+
+	return -1;
+}
+
+int m_operator_equal_value(struct m_operation *operation)
 {
 	void *p = NULL;
+	size_t *plen = NULL;
 
 	switch(operation->var->store_type) {
 	case MST_ADDRESS:
@@ -25,64 +174,25 @@ int m_op_equal_uint32_value(struct m_operation *operation)
 		break;
 	}
 
-	return *((uint32_t *)(p)) == (uint32_t)(operation->value_i);
-}
+	plen = operation->var->var_len;
 
-void m_op_equal_uint32_clean(struct m_operation *operation)
-{
-	(void)operation;
-	return;
-}
 
-int m_op_equal_uint32_init(struct m_operation *operation, const char *option, const char *value)
-{
-	(void)option;
-	operation->value_i = atoi(value);
-	operation->operator_option = NULL;
-
-	return 0;
-}
-
-/* TODO: do not support option now! equal(var_name[][]: value) */
-int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
-{
-    (void)option;
-	int eno = 0;
-    
-	operation->op = &operator_equal;
-	operation->var = var;
-
-	switch(var->real_type) {
-	case MRT_UINT32:
-		if(m_op_equal_uint32_init(operation, NULL, value) != 0) {
-			eno = -1;
-			goto err;
-		}
-		break;
-	default:
-		eno = -2;
-		goto err;
-		break;
-	}
-
-	return 0;
-err:
-	switch(eno) {
-	case -1:
-        break;
-	case -2:
-		ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
-		break;
-	}
-
-	return -1;
-}
-
-int m_operator_equal_value(struct m_operation *operation)
-{
 	switch(operation->var->real_type) {
+	case MRT_UINT8:
+	case MRT_INT8:
+		return *((uint8_t *)(p)) == (uint8_t)(operation->value_i);
+		break;
+	case MRT_UINT16:
+	case MRT_INT16:
+		return *((uint16_t *)(p)) == (uint16_t)(operation->value_i);
+		break;
 	case MRT_UINT32:
-		return m_op_equal_uint32_value(operation); 
+	case MRT_INT32:
+		return *((uint32_t *)(p)) == (uint32_t)(operation->value_i);
+		break;
+	case MRT_UINT64:
+	case MRT_INT64:
+		return *((uint64_t *)(p)) == (uint64_t)(operation->value_i);
 		break;
 	default:
 		break;
@@ -95,7 +205,6 @@ void m_operator_equal_clean(struct m_operation *operation)
 {
 	switch(operation->var->real_type) {
 	case MRT_UINT32:
-		m_op_equal_uint32_clean(operation); 
 		break;
 	default:
 		break;
