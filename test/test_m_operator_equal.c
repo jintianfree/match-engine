@@ -1,19 +1,19 @@
 #include <stdio.h>
+#include "m_variable.h"
 #include "../m_operator_equal.c"
 
 int main()
 {
-	int a;
-
+	int a  = 0;
+	struct m_operation op;
+    
 	struct m_variable vars[] = {
-		{"var1", MT_UINT32, &a, NULL},
+		{"var1", MST_ADDRESS, MRT_UINT32, &a, NULL, M_VARIABLE_LIST_NULL},
+   		{"var2", MST_ADDRESS, MRT_INT32, &a, NULL, M_VARIABLE_LIST_NULL},
+        {"", 0, 0, NULL, NULL, M_VARIABLE_LIST_NULL},
 	};
 
-	m_variable_list_register(vars, 1);
-
-	struct m_operation op;
-
-	m_operator_equal_init("equal(var1:2)", &op, head);
+	m_operator_equal_init(&vars[0], NULL, "2", &op);
 
 	a = 2;
 	printf("%d \n", m_operator_equal_value(&op));
@@ -21,8 +21,7 @@ int main()
 	a = 3;
 	printf("%d \n", m_operator_equal_value(&op));
 
-
-	m_operator_equal_init("equal(var2:2)", &op, head);
+	m_operator_equal_init(&vars[1], NULL, "5", &op);
 
 	return 0;
 }

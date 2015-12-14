@@ -1,3 +1,6 @@
+#ifndef _M_COMMON_H_
+#define _M_COMMON_H_
+
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
@@ -21,7 +24,7 @@
 
 #ifdef _WIN32
 
-char *strndup(const char *s, size_t n)
+static inline char *strndup(const char *s, size_t n)
 {
     char *p = malloc(n + 1);
     if(!p) {
@@ -36,7 +39,7 @@ char *strndup(const char *s, size_t n)
 
 #endif
 
-int nprintf(const char *str, int len)
+static inline int nprintf(const char *str, int len)
 {
     int i = 0;
     
@@ -48,7 +51,7 @@ int nprintf(const char *str, int len)
 }
 
 /* "AB EF CD"  -> {AB,EF,CD} */
-int bytes_string_2_bytes(char *str, uint8_t bytes[], int b_len)
+static inline int bytes_string_2_bytes(char *str, uint8_t bytes[], int b_len)
 {
 	int eno = 0;
 	int len = 0;
@@ -113,3 +116,5 @@ err:
 
 	return -1;
 }
+
+#endif

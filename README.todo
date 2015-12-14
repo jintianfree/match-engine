@@ -1,2 +1,7 @@
 m_logic_expression		do not support dynamic add rule
 m_operation_equal		do not support option
+
+
+读配置文件匹配
+action
+基于会话的匹配  会话可以自定义

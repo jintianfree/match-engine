@@ -49,6 +49,8 @@ void m_variable_list_unregister(struct m_variable_list *head, struct m_variable 
 void m_variable_list_print(struct m_variable_list *head);
 
 void m_variable_print(struct m_variable *var);
-struct m_variable *name_2_var(struct m_variable_list *head, const char *name);
+struct m_variable *m_variable_name_2_var(struct m_variable_list *head, const char *name);
+const char *m_real_type_2_str(enum m_var_real_type type);
+
 
 #endif

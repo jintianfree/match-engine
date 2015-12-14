@@ -6,7 +6,7 @@
 
 struct m_operation;
 
-typedef int (*operator_init)(const char *str, struct m_operation *operation, struct m_variable_list *head);
+typedef int (*operator_init)(struct m_variable *var, const char *option, const char *value, struct m_operation *operation);
 typedef void (*operator_clean)(struct m_operation *operation);
 typedef int (*operator_value)(struct m_operation *operation);
 
@@ -29,5 +29,9 @@ struct m_operation {
 	};
 	void *operator_option;
 };
+
+struct m_operation *m_operation_init(const char *s, struct m_variable_list *head);
+int m_operation_value(struct m_operation *operation);
+void m_operation_clean(struct m_operation *operation);
 
 #endif

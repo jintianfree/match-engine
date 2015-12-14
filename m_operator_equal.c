@@ -4,6 +4,7 @@
 #include "m_log.h"
 #include "m_variable.h"
 #include "m_operation.h"
+#include "m_operator_equal.h"
 
 struct equal_operator_option {
 	int start;
@@ -13,7 +14,18 @@ struct equal_operator_option {
 
 int m_op_equal_uint32_value(struct m_operation *operation)
 {
-	return *((uint32_t *)(operation->var->var_addr)) == (uint32_t)(operation->value_i);
+	void *p = NULL;
+
+	switch(operation->var->store_type) {
+	case MST_ADDRESS:
+		p = operation->var->var_addr;
+		break;
+	case MST_POINTER_ADDRESS:
+		p = *(void **)(operation->var->var_addr);
+		break;
+	}
+
+	return *((uint32_t *)(p)) == (uint32_t)(operation->value_i);
 }
 
 void m_op_equal_uint32_clean(struct m_operation *operation)
@@ -22,7 +34,7 @@ void m_op_equal_uint32_clean(struct m_operation *operation)
 	return;
 }
 
-int m_op_equal_uint32_init(struct m_operation *operation, char *option, char *value)
+int m_op_equal_uint32_init(struct m_operation *operation, const char *option, const char *value)
 {
 	(void)option;
 	operation->value_i = atoi(value);
@@ -32,89 +44,35 @@ int m_op_equal_uint32_init(struct m_operation *operation, char *option, char *va
 }
 
 /* TODO: do not support option now! equal(var_name[][]: value) */
-int m_operator_equal_init(const char *str, struct m_operation *operation, struct m_variable_list *head)
+int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
 {
+    (void)option;
 	int eno = 0;
-	char *p = NULL;
-	struct m_variable *var = NULL;
-
-	p = strdup(str);
-	if(p == NULL) {
-		eno = -1;
-		goto err;
-	}
-
-	/* equal(var_name:value) */
-	char *op = strtok(p, "(:)");
-	if(op == NULL) {
-		eno = -2;
-		goto err;
-	}
-
-	char *var_name = strtok(NULL, "(:)");
-	if(var_name == NULL) {
-		eno = -2;
-		goto err;
-	}
-
-	/* TODO: 
-	 * char *option =
-	 */
-
-	char *value = strtok(NULL, "(:)");
-	if(value == NULL) {
-		eno = -2;
-		goto err;
-	}
-
-	if((var = name_2_var(head, var_name)) == NULL) {
-		eno  = -3;
-		goto err;
-	}
-
+    
+	operation->op = &operator_equal;
 	operation->var = var;
 
-	switch(var->type) {
-	case MT_UINT32:
+	switch(var->real_type) {
+	case MRT_UINT32:
 		if(m_op_equal_uint32_init(operation, NULL, value) != 0) {
-			eno = -4;
+			eno = -1;
 			goto err;
 		}
 		break;
 	default:
-		eno = -5;
+		eno = -2;
 		goto err;
 		break;
-	}
-
-	if(p) {
-		free(p);
-		p = NULL;
 	}
 
 	return 0;
 err:
 	switch(eno) {
 	case -1:
-		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
-		break;
+        break;
 	case -2:
-		ERROR("illegal str %s \n", str);
+		ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
 		break;
-	case -3:
-		ERROR("coundn't find var %s \n", var_name);
-		break;
-	case -4:
-		ERROR("%s do not support type %d \n", op, var->type);
-		break;
-	case -5:
-		ERROR("%s parse value error \n", str);
-		break;
-	}
-
-	if(p) {
-		free(p);
-		p = NULL;
 	}
 
 	return -1;
@@ -122,8 +80,8 @@ err:
 
 int m_operator_equal_value(struct m_operation *operation)
 {
-	switch(operation->var->type) {
-	case MT_UINT32:
+	switch(operation->var->real_type) {
+	case MRT_UINT32:
 		return m_op_equal_uint32_value(operation); 
 		break;
 	default:
@@ -135,8 +93,8 @@ int m_operator_equal_value(struct m_operation *operation)
 
 void m_operator_equal_clean(struct m_operation *operation)
 {
-	switch(operation->var->type) {
-	case MT_UINT32:
+	switch(operation->var->real_type) {
+	case MRT_UINT32:
 		m_op_equal_uint32_clean(operation); 
 		break;
 	default:
