@@ -9,7 +9,7 @@ int main()
 	struct m_variable_list head = M_VARIABLE_LIST_NULL;
 	struct m_operation *op1 = NULL;
 	struct m_operation *op2 = NULL;
-    struct m_operation *op3 = NULL;
+    //struct m_operation *op3 = NULL;
 
 	struct m_variable vars[] = {
 		{"var1", MST_ADDRESS, MRT_UINT32, &a, NULL, M_VARIABLE_LIST_NULL},
@@ -20,7 +20,7 @@ int main()
 
 	op1 = m_operation_init("equal(var1:2)", &head);
 	op2 = m_operation_init("null(var1)", &head);
-	op3 = m_operation_init("equal(var1:)", &head);
+	//op3 = m_operation_init("equal(var1:)", &head);
     
 	if(op1 && op2) {
 		a = 0;

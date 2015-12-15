@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
 
@@ -13,8 +14,12 @@ int main()
 			else
 				assert((uint16_t)a == (uint16_t)b);
 		}
-
-		printf(".");
-
 	}
+
+	int ai = -20;
+	int8_t bi = (int8_t)ai;
+
+	assert((uint8_t)ai == (uint8_t)bi);
+
+	return 0;
 }

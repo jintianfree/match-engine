@@ -23,7 +23,7 @@ struct m_operation {
 	union {
 		struct {
 			void *value_p;
-			int value_len;
+			size_t value_len;
 		};
 		uint64_t value_i;
 	};

@@ -5,3 +5,9 @@ m_operation_equal		do not support option
 读配置文件匹配
 action
 基于会话的匹配  会话可以自定义
+
+pcre
+
+字符串"\n\t" 转换为真正的转义字符
+字符串中 含 (:) []
+
