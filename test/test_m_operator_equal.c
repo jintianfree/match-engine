@@ -100,87 +100,178 @@ void uint32_equal_test()
 
 void string_equal_test()
 {
-    char string[1024];
-    char *sptr = NULL;
-    char *p = NULL;
-    size_t slen = 0;        
-    struct m_operation op1, op2;
+	char string[1024];
+	char *sptr = NULL;
+	char *p = NULL;
+	size_t slen = 0;        
+	struct m_operation op1, op2;
 
-    /*
-     * MST_ADDRESS
-     */
-    struct m_variable var1 = {"string1", MST_ADDRESS, MRT_STRING, string, &slen, M_VARIABLE_LIST_NULL};
-    
+	/*
+	 * MST_ADDRESS
+	 */
+	struct m_variable var1 = {"string1", MST_ADDRESS, MRT_STRING, string, &slen, M_VARIABLE_LIST_NULL};
+
 	assert(m_operator_equal_init(&var1, NULL, "",           &op1) == 0);
-    assert(m_operator_equal_init(&var1, NULL, "abc \t \n",  &op2) == 0);
+	assert(m_operator_equal_init(&var1, NULL, "abc \t \n",  &op2) == 0);
 
-    p = "";
-    strcpy(string, p);
-    slen = strlen(p);    
-    assert(m_operator_equal_value(&op1) == 1);
-    assert(m_operator_equal_value(&op2) == 0);
-    
-    p = "abc \t \n";
-    strcpy(string, p);
-    slen = strlen(p);
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 1);
-    
-    slen = 3;
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 0);    
-    
-    m_operator_equal_clean(&op1);
-    m_operator_equal_clean(&op2);
-    
-    /*
-     * ERROR:  MST_POINTER_ADDRESS + &string  is a wrong way.
-     */
-    struct m_variable var2 = {"string2", MST_POINTER_ADDRESS, MRT_STRING, &string, &slen, M_VARIABLE_LIST_NULL};
-    (void)var2;
-    
-    /*
-     * MST_POINTER_ADDRESS
-     */
-    struct m_variable var3 = {"sptr",    MST_POINTER_ADDRESS, MRT_STRING, &sptr,   &slen, M_VARIABLE_LIST_NULL};
-    
-    assert(m_operator_equal_init(&var3, NULL, "",           &op1) == 0);
-    assert(m_operator_equal_init(&var3, NULL, "abc \t \n",  &op2) == 0);
+	p = "";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op2) == 0);
 
-    sptr = NULL;
-    slen = 0;
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 0);
-    
-    sptr = string;
-    
-    p = "";
-    strcpy(string, p);
-    slen = strlen(p);    
-    assert(m_operator_equal_value(&op1) == 1);
-    assert(m_operator_equal_value(&op2) == 0);
-    
-    p = "abc \t \n";
-    strcpy(string, p);
-    slen = strlen(p);
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 1);
-    
-    slen = 3;
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 0);    
-    
-    p = "abc \t \n++++++++";
-    strcpy(string, p);
-    slen = strlen("abc \t \n");
-    assert(m_operator_equal_value(&op1) == 0);
-    assert(m_operator_equal_value(&op2) == 1); 
-    
-    m_operator_equal_clean(&op1);
-    m_operator_equal_clean(&op2);
+	p = "abc \t \n";
+	strcpy(string, p);
+	slen = strlen(p);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 1);
 
-    
-    return;
+	slen = 3;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);    
+
+	m_operator_equal_clean(&op1);
+	m_operator_equal_clean(&op2);
+
+	/*
+	 * ERROR:  MST_POINTER_ADDRESS + &string  is a wrong way.
+	 */
+	struct m_variable var2 = {"string2", MST_POINTER_ADDRESS, MRT_STRING, &string, &slen, M_VARIABLE_LIST_NULL};
+	(void)var2;
+
+	/*
+	 * MST_POINTER_ADDRESS
+	 */
+	struct m_variable var3 = {"sptr",    MST_POINTER_ADDRESS, MRT_STRING, &sptr,   &slen, M_VARIABLE_LIST_NULL};
+
+	assert(m_operator_equal_init(&var3, NULL, "",           &op1) == 0);
+	assert(m_operator_equal_init(&var3, NULL, "abc \t \n",  &op2) == 0);
+
+	sptr = NULL;
+	slen = 0;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+
+	sptr = string;
+
+	p = "";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op2) == 0);
+
+	p = "abc \t \n";
+	strcpy(string, p);
+	slen = strlen(p);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 1);
+
+	slen = 3;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);    
+
+	p = "abc \t \n++++++++";
+	strcpy(string, p);
+	slen = strlen("abc \t \n");
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 1); 
+
+	m_operator_equal_clean(&op1);
+	m_operator_equal_clean(&op2);
+
+	
+	/*
+	 * option
+	 */
+	struct m_operation op0, op3, op4, op5, op6, op7, op8;
+	struct m_variable var4 = {"string1", MST_ADDRESS, MRT_STRING, string, &slen, M_VARIABLE_LIST_NULL};
+
+	assert(m_operator_equal_init(&var4, "[[]",     "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "]",       "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "[",       "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, ",[]",     "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "[2,,3]",  "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "[2,,]",   "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "[,,]",    "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var4, "[,,3]",   "abcde", &op1) != 0);
+
+	assert(m_operator_equal_init(&var4, ""    ,    "abcde", &op0) == 0);
+	assert(m_operator_equal_init(&var4, "[][]",    "abcde", &op1) == 0);
+	assert(m_operator_equal_init(&var4, "[,][]",   "abcde", &op2) == 0);
+	assert(m_operator_equal_init(&var4, "[3][]",   "abcde", &op3) == 0);
+	assert(m_operator_equal_init(&var4, "[,5][]",  "abcde", &op4) == 0);
+	assert(m_operator_equal_init(&var4, "[3,][]",  "abcde", &op5) == 0);
+	assert(m_operator_equal_init(&var4, "[1,6][]", "abcde", &op6) == 0);
+	assert(m_operator_equal_init(&var4, "[][I]",   "abcde", &op7) == 0);
+	assert(m_operator_equal_init(&var4, "[1,6][I]","abcde", &op8) == 0);
+
+	p = "abcde";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op0) == 1);
+	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op2) == 1);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 1);
+	assert(m_operator_equal_value(&op5) == 0);
+	assert(m_operator_equal_value(&op6) == 0);
+	assert(m_operator_equal_value(&op7) == 1);
+	assert(m_operator_equal_value(&op8) == 0);
+
+	p = "012abcde";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op0) == 0);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 1);
+	assert(m_operator_equal_value(&op4) == 0);
+	assert(m_operator_equal_value(&op5) == 1);
+	assert(m_operator_equal_value(&op6) == 0);
+	assert(m_operator_equal_value(&op7) == 0);
+	assert(m_operator_equal_value(&op8) == 0);
+
+	p = "0abcde678";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op0) == 0);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 0);
+	assert(m_operator_equal_value(&op5) == 0);
+	assert(m_operator_equal_value(&op6) == 1);
+	assert(m_operator_equal_value(&op7) == 0);
+	assert(m_operator_equal_value(&op8) == 1);
+
+	p = "0abCDe678";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op0) == 0);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 0);
+	assert(m_operator_equal_value(&op5) == 0);
+	assert(m_operator_equal_value(&op6) == 0);
+	assert(m_operator_equal_value(&op7) == 0);
+	assert(m_operator_equal_value(&op8) == 1);
+
+	p = "abCDe";
+	strcpy(string, p);
+	slen = strlen(p);    
+	assert(m_operator_equal_value(&op0) == 0);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 0);
+	assert(m_operator_equal_value(&op5) == 0);
+	assert(m_operator_equal_value(&op6) == 0);
+	assert(m_operator_equal_value(&op7) == 1);
+	assert(m_operator_equal_value(&op8) == 0);
+
+
+	return;
 }
 
 int main()
