@@ -160,17 +160,35 @@ err:
 int m_operator_equal_init_int(struct m_variable *var, const char *value, struct m_operation *operation)
 {
 	int eno = 0;
+	char *end = NULL;
 	long long int lli = 0;
 	unsigned long long  int ulli = 0;
 
-	errno = 0;
+	/* remove space char in the end of value string */
+	int i = 0;
+	char *start = strdup(value);
+	int len = strlen(value);
+	for(i = len - 1; i >= 0; i--) {
+		if(isspace(start[i])) {
+			start[i] = '\0';
+			len--;
+		} else {
+			break;
+		}
+	}
 
+	if(len == 0) {
+		eno = -1;
+		goto err;
+	}
+
+	errno = 0;
 	switch(var->real_type) {
 		case MRT_UINT8:
 		case MRT_UINT16:
 		case MRT_UINT32:
 		case MRT_UINT64:
-			ulli = strtoull(value, NULL, 10);
+			ulli = strtoull(start, &end, 10);
 			operation->value_i = ulli;
 			operation->operator_option = NULL;
 			break;
@@ -178,7 +196,7 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 		case MRT_INT16:
 		case MRT_INT32:
 		case MRT_INT64:
-			lli = strtoll(value, NULL, 10);
+			lli = strtoll(start, &end, 10);
 			operation->value_i = lli;
 			operation->operator_option = NULL;
 			break;
@@ -186,8 +204,7 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 			break;
 	}
 
-
-	if(errno != 0) {
+	if(errno != 0 || (end != NULL && *end != '\0')) {
 		eno = -1;
 		goto err;
 	}
@@ -251,10 +268,11 @@ err:
 	return -1;
 }
 
-/* TODO: do not support option now! equal(var_name[][]: value) */
 int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
 {
 	int eno = 0;
+	int len = 0;
+	uint8_t *bytes = NULL;
 	struct equal_operator_option *operator_option = NULL;
 
 	if(value == NULL) {
@@ -278,6 +296,7 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 				eno = -2;
 				goto err;
 			}
+
 			break;
 		case MRT_STRING:
 			operator_option = parse_m_operator_equal_option(option);
@@ -287,8 +306,8 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 			}
 
 			if(operator_option && operator_option->binary_string) {
-				int len = strlen(value);
-				uint8_t *bytes = malloc(len);
+				len = strlen(value);
+				bytes = malloc(len);
 				if(bytes == NULL) {
 					eno = -3;
 					goto err;
@@ -310,6 +329,36 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 				operation->value_len = strlen(value);
 			}
 
+			operation->operator_option = operator_option;
+
+			break;
+		case MRT_BYTES:
+			operator_option = parse_m_operator_equal_option(option);
+			if(operator_option == (void *)-1) {
+				eno = -2;
+				goto err;
+			}
+
+			if(operator_option && (operator_option->ignore_case || operator_option->binary_string)) {
+				eno = -5;
+				goto err;
+			}
+
+			len = strlen(value);
+			bytes = malloc(len);
+			if(bytes == NULL) {
+				eno = -3;
+				goto err;
+			}
+
+			len = bytes_string_2_bytes(value, bytes, len);
+			if(len < 0) {
+				eno = -2;
+				goto err;
+			}
+
+			operation->value_p = bytes;
+			operation->value_len = len;
 			operation->operator_option = operator_option;
 
 			break;
@@ -335,6 +384,9 @@ err:
 			break;
 		case -4:
 			ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
+			break;
+		case -5:
+			ERROR("MRT_BYTES do not support I or B option (%s) \n", option);
 			break;
 	}
 
@@ -406,6 +458,27 @@ int m_operator_equal_value(struct m_operation *operation)
 			}
 
 			break;
+		case MRT_BYTES:
+			option = (struct equal_operator_option *)operation->operator_option;
+			if(option) {
+				size_t start = option->start;
+				size_t end = option->end == 0 ? plen : (size_t)option->end;
+
+				if(start > plen || end > plen) {
+					return 0;
+				}
+
+				p += start;
+				plen = (end - start);
+			}
+
+			if(plen != operation->value_len) {
+				return 0;
+			}
+
+			return (memcmp(p, operation->value_p, plen) == 0);
+
+			break;
 		default:
 			break;
 	}
@@ -417,6 +490,7 @@ void m_operator_equal_clean(struct m_operation *operation)
 {
 	switch(operation->var->real_type) {
 		case MRT_STRING:
+		case MRT_BYTES:
 			if(operation->value_p) {
 				free(operation->value_p);
 				operation->value_p = NULL;
@@ -429,6 +503,7 @@ void m_operator_equal_clean(struct m_operation *operation)
 	operation->var = NULL;
 	operation->op = NULL;
 	operation->value_i = 0;
+
 	if(operation->operator_option) {
 		free(operation->operator_option);
 		operation->operator_option = NULL;

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 #include "m_log.h"
 
 #ifndef offsetof
@@ -50,6 +51,40 @@ static inline int nprintf(const char *str, int len)
     return len;
 }
 
+static inline void print_buffer(unsigned char *buf, int nbuf)
+{
+	int i, j;
+	int col = 16;
+	unsigned char ch;
+
+	for (i = 0; i < nbuf; i++) {
+		printf("%x%x ", buf[i] >> 4, buf[i] & 0xf);
+
+		if ((i + 1) % col == 0) {
+			for (j = 0; j < col; j++) {
+				ch = *(buf + i + j - (col-1));
+
+				printf("%c", isprint (ch) ? ch : '.');
+			}
+
+			printf("\n");
+		}
+	}
+
+	for (j = 0; j < col - i % col; j++) {
+		printf("   ");
+	}
+
+	for (j = 0; j < i % col; j++) {
+		ch = *(buf + i + j - i % col);
+		printf("%c", isprint (ch) ? ch : '.');
+	}
+
+	printf("\n");
+
+	return;
+}
+
 /* "AB EF CD"  -> {AB,EF,CD} */
 static inline int bytes_string_2_bytes(const char *str, uint8_t bytes[], int b_len)
 {
@@ -64,19 +99,13 @@ static inline int bytes_string_2_bytes(const char *str, uint8_t bytes[], int b_l
 		goto err;
 	}
 	
+	errno = 0;
 	for(p = strtok(s, " \t"); p != NULL && len < b_len; p = strtok(NULL, " \t")) {
-		int p_len = 0;
 		long num = 0;
 		char *end_ptr = NULL;
 
-		p_len = strlen(p);
-		if(p_len <= 0 || p_len > 2) {
-			eno = -2;
-			goto err;
-		}
-
 		num = strtol(p, &end_ptr, 16);
-		if(errno != 0 || end_ptr == p) {
+		if(num > UINT8_MAX || errno != 0 || (end_ptr != NULL && *end_ptr != 0)) {
 			eno = -2;
 			goto err;
 		}

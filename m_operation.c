@@ -14,7 +14,7 @@ struct m_operator *operators[] = {
 	NULL,
 };
 
-/* operator(var_name[operation]:value) */
+/* operator(var_name[option]:value) */
 struct m_operation *m_operation_init(const char *str, struct m_variable_list *head)
 {
 	int eno = 0;
@@ -32,19 +32,46 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 		goto err;
 	}
 
-	if((op = strtok(p, "(:)")) == NULL) {
+	if(p[strlen(p) - 1] != ')') {
 		eno = -2;
 		goto err;
 	}
 
-	if((var_name = strtok(NULL, "(:)")) == NULL) {
+	/* operator(var_name[option]:value) */
+	char *pos = p;
+
+	op = pos;
+	if((pos = strchr(pos, '(')) != NULL) {
+		*pos = '\0';
+		pos += 1;
+	} else {
 		eno = -2;
 		goto err;
 	}
 
-	/* value may be null eg: m_operator_null */
-	value = strtok(NULL, "(:)");
-    
+
+	var_name = pos;
+	if((pos = strchr(pos, ':')) != NULL) {
+		*pos = 0;
+		pos += 1;
+
+		if(*pos == ')' || *pos == '\0') {
+			eno = -2;
+			goto err;
+		}
+
+		value = pos;
+		value[strlen(value) - 1] = '\0'; /* remove ')' */
+	} else {
+		if(*var_name == '\0') {
+			eno = -2;
+			goto err;
+		}
+		var_name[strlen(var_name) - 1] = '\0'; /* remove ')' */
+		value = NULL;
+	}
+	
+
 	char *o = strchr(var_name, '[');	
 	if(o != NULL) {
 		option = strdup(o);
@@ -100,19 +127,19 @@ err:
 		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
 		break;
 	case -2:
-		ERROR("illegal operation %s \n", str);
+		ERROR("illegal operation (%s) \n", str);
 		break;
 	case -3:
-		ERROR("do not support operator %s \n", op);
+		ERROR("do not support operator (%s) in (%s) \n", op, str);
 		break;
 	case -4:
-		ERROR("unknown var name %s \n", var_name);
+		ERROR("unknown var name (%s) in (%s) \n", var_name, str);
 		break;
 	case -5:
 		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
 		break;
 	case -6:
-		ERROR("parse %s error \n", str);
+		ERROR("parse (%s) error \n", str);
         break;
 	}
 

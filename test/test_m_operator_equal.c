@@ -5,17 +5,19 @@
 void int8_equal_test()
 {
 	int8_t int8 = 0;
-    struct m_operation op1, op2, op3, op4, op5;
-    struct m_variable var = {"int8", MST_ADDRESS, MRT_INT8, &int8, NULL, M_VARIABLE_LIST_NULL};
-    
+	struct m_operation op1, op2, op3, op4, op5;
+	struct m_variable var = {"int8", MST_ADDRESS, MRT_INT8, &int8, NULL, M_VARIABLE_LIST_NULL};
+
 	assert(m_operator_equal_init(&var, NULL, "65535", &op1) != 0);	/* equal(int8:65535) */
 	assert(m_operator_equal_init(&var, NULL, "255",   &op1) != 0);	/* equal(int8:255) */
+	assert(m_operator_equal_init(&var, NULL, "a25",   &op1) != 0);	/* equal(int8:255) */
+	assert(m_operator_equal_init(&var, NULL, "25a",   &op1) != 0);	/* equal(int8:255) */
 
 	assert(m_operator_equal_init(&var, NULL, "-128", &op1) == 0);	/* equal(int8:-128) */
-	assert(m_operator_equal_init(&var, NULL, "127",  &op2) == 0);	/* equal(int8:127) */
+	assert(m_operator_equal_init(&var, NULL, " 127",  &op2) == 0);	/* equal(int8:127) */
 	assert(m_operator_equal_init(&var, NULL, "0",    &op3) == 0);	/* equal(int8:0) */
 	assert(m_operator_equal_init(&var, NULL, "-55",  &op4) == 0);	/* equal(int8:-55) */
-	assert(m_operator_equal_init(&var, NULL, "55",   &op5) == 0);	/* equal(int8:55) */
+	assert(m_operator_equal_init(&var, NULL, "55 ",   &op5) == 0);	/* equal(int8:55) */
 
 	int8 = -128;
 	assert(m_operator_equal_value(&op1) == 1);
@@ -57,45 +59,45 @@ void int8_equal_test()
 	m_operator_equal_clean(&op3);
 	m_operator_equal_clean(&op4);
 	m_operator_equal_clean(&op5);
-    
-    return;
+
+	return;
 }
 
 void uint32_equal_test()
 {
 	uint32_t uint32 = 0;	
-    struct m_operation op1, op2, op3;
-    struct m_variable var = {"uint32", MST_ADDRESS, MRT_UINT32, &uint32, NULL, M_VARIABLE_LIST_NULL};
-    
+	struct m_operation op1, op2, op3;
+	struct m_variable var = {"uint32", MST_ADDRESS, MRT_UINT32, &uint32, NULL, M_VARIABLE_LIST_NULL};
+
 	assert(m_operator_equal_init(&var, NULL, "4294967296",           &op1) != 0);
-    assert(m_operator_equal_init(&var, NULL, "18446744073709551615", &op1) != 0);
-    assert(m_operator_equal_init(&var, NULL, "18446744073709551616", &op1) != 0);
+	assert(m_operator_equal_init(&var, NULL, "18446744073709551615", &op1) != 0);
+	assert(m_operator_equal_init(&var, NULL, "18446744073709551616", &op1) != 0);
 
 	assert(m_operator_equal_init(&var, NULL, "4294967295", &op1) == 0);
 	assert(m_operator_equal_init(&var, NULL, "0",          &op2) == 0);	
 	assert(m_operator_equal_init(&var, NULL, "55",         &op3) == 0);
 
 	uint32 = 4294967295U;
- 	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op1) == 1);
 	assert(m_operator_equal_value(&op2) == 0);
 	assert(m_operator_equal_value(&op3) == 0);
-    
-    uint32 = 0;
+
+	uint32 = 0;
 	assert(m_operator_equal_value(&op1) == 0);
 	assert(m_operator_equal_value(&op2) == 1);
 	assert(m_operator_equal_value(&op3) == 0);    
-    
-    uint32 = 55;
+
+	uint32 = 55;
 	assert(m_operator_equal_value(&op1) == 0);
 	assert(m_operator_equal_value(&op2) == 0);
 	assert(m_operator_equal_value(&op3) == 1);
-	
+
 
 	m_operator_equal_clean(&op1);
 	m_operator_equal_clean(&op2);
 	m_operator_equal_clean(&op3);
-    
-    return;
+
+	return;
 }
 
 void string_equal_test()
@@ -179,7 +181,7 @@ void string_equal_test()
 	m_operator_equal_clean(&op1);
 	m_operator_equal_clean(&op2);
 
-	
+
 	/*
 	 * option
 	 */
@@ -323,15 +325,88 @@ void string_equal_test()
 	assert(m_operator_equal_value(&op2) == 0);
 	assert(m_operator_equal_value(&op3) == 1);
 	assert(m_operator_equal_value(&op4) == 0);
-	
+
+	return;
+}
+
+void bytes_equal_test()
+{
+	size_t blen = 0;
+	uint8_t b[] = {0x1a, 0x2b, 0x4c, 0x5d, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5};
+	struct m_variable var1 = {"bytes", MST_ADDRESS, MRT_BYTES, b, &blen, M_VARIABLE_LIST_NULL};
+
+	struct m_operation op1, op2, op3;
+
+	assert(m_operator_equal_init(&var1, "[]", "abcde", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "abcd", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "abc", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "ab gi", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "ab ig", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "ab ig ab", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "ab,", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[]", "ab,cd", &op1) != 0);
+	assert(m_operator_equal_init(&var1, "[][IB]", "ab", &op1) != 0);
+
+	assert(m_operator_equal_init(&var1, "", "ab cd ef", &op1) == 0);
+	assert(m_operator_equal_init(&var1, "", "0xab 0xcd 0xef", &op2) == 0);
+	assert(m_operator_equal_init(&var1, "[5,8]", "0xab 0xcd 0xef", &op3) == 0);
+
+	blen = 0;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	b[0] = 0xab;
+	b[1] = 0xcd;
+	b[2] = 0xef;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	blen = 3;
+	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op2) == 1);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	blen = 2;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	blen = 4;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	b[5] = 0xab;
+	b[6] = 0xcd;
+	b[7] = 0xef;
+
+	blen = 7;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+
+	blen = 8;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 1);
+
+	blen = 9;
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 1);
+
 	return;
 }
 
 int main()
 {
-    int8_equal_test();
-    uint32_equal_test();
-    string_equal_test();
-    
+	int8_equal_test();
+	uint32_equal_test();
+	string_equal_test();
+	bytes_equal_test();
+
 	return 0;
 }
+
