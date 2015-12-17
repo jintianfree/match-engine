@@ -8,11 +8,11 @@
 
 int m_operator_null_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
 {
-    (void)option;
+	(void)option;
 	(void)value;
 
 	int eno = 0;
-    
+
 	operation->op = &operator_null;
 	operation->var = var;
 
@@ -99,7 +99,7 @@ int m_operator_null_value(struct m_operation *operation)
 
 void m_operator_null_clean(struct m_operation *operation)
 {
-    (void)operation;
+	(void)operation;
 	return;
 }
 

@@ -184,24 +184,24 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 
 	errno = 0;
 	switch(var->real_type) {
-		case MRT_UINT8:
-		case MRT_UINT16:
-		case MRT_UINT32:
-		case MRT_UINT64:
-			ulli = strtoull(start, &end, 10);
-			operation->value_i = ulli;
-			operation->operator_option = NULL;
-			break;
-		case MRT_INT8:
-		case MRT_INT16:
-		case MRT_INT32:
-		case MRT_INT64:
-			lli = strtoll(start, &end, 10);
-			operation->value_i = lli;
-			operation->operator_option = NULL;
-			break;
-		default:
-			break;
+	case MRT_UINT8:
+	case MRT_UINT16:
+	case MRT_UINT32:
+	case MRT_UINT64:
+		ulli = strtoull(start, &end, 10);
+		operation->value_i = ulli;
+		operation->operator_option = NULL;
+		break;
+	case MRT_INT8:
+	case MRT_INT16:
+	case MRT_INT32:
+	case MRT_INT64:
+		lli = strtoll(start, &end, 10);
+		operation->value_i = lli;
+		operation->operator_option = NULL;
+		break;
+	default:
+		break;
 	}
 
 	if(errno != 0 || (end != NULL && *end != '\0')) {
@@ -210,59 +210,59 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 	}
 
 	switch(var->real_type) {
-		case MRT_UINT8:
-			if(ulli > UINT8_MAX) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_UINT16:
-			if(ulli > UINT16_MAX) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_UINT32:
-			if(ulli > UINT32_MAX) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_UINT64:
-			break;
-		case MRT_INT8:
-			if(lli > INT8_MAX || lli < INT8_MIN) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_INT16:
-			if(lli > INT16_MAX || lli < INT16_MIN) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_INT32:
-			if(lli > INT32_MAX || lli < INT32_MIN) {
-				eno = -2;
-				goto err;
-			}
-			break;
-		case MRT_INT64:
-			break;
-		default:
-			break;
+	case MRT_UINT8:
+		if(ulli > UINT8_MAX) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT16:
+		if(ulli > UINT16_MAX) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT32:
+		if(ulli > UINT32_MAX) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_UINT64:
+		break;
+	case MRT_INT8:
+		if(lli > INT8_MAX || lli < INT8_MIN) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT16:
+		if(lli > INT16_MAX || lli < INT16_MIN) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT32:
+		if(lli > INT32_MAX || lli < INT32_MIN) {
+			eno = -2;
+			goto err;
+		}
+		break;
+	case MRT_INT64:
+		break;
+	default:
+		break;
 	}
 
 	return 0;
 err:
 	switch(eno) {
-		case -1:
-			ERROR("parse value (%s) error \n", value);
-			break;
-		case -2:
-			ERROR("value (%s) overflow  type (%s) \n", value, m_real_type_2_str(var->real_type));
-			break;
+	case -1:
+		ERROR("parse value (%s) error \n", value);
+		break;
+	case -2:
+		ERROR("value (%s) overflow  type (%s) \n", value, m_real_type_2_str(var->real_type));
+		break;
 	}
 
 	return -1;
@@ -284,66 +284,28 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 	operation->var = var;
 
 	switch(var->real_type) {
-		case MRT_UINT8:
-		case MRT_INT8:
-		case MRT_UINT16:
-		case MRT_INT16:
-		case MRT_UINT32:
-		case MRT_INT32:
-		case MRT_UINT64:
-		case MRT_INT64:
-			if(m_operator_equal_init_int(var, value, operation) != 0) {
-				eno = -2;
-				goto err;
-			}
+	case MRT_UINT8:
+	case MRT_INT8:
+	case MRT_UINT16:
+	case MRT_INT16:
+	case MRT_UINT32:
+	case MRT_INT32:
+	case MRT_UINT64:
+	case MRT_INT64:
+		if(m_operator_equal_init_int(var, value, operation) != 0) {
+			eno = -2;
+			goto err;
+		}
 
-			break;
-		case MRT_STRING:
-			operator_option = parse_m_operator_equal_option(option);
-			if(operator_option == (void *)-1) {
-				eno = -2;
-				goto err;
-			}
+		break;
+	case MRT_STRING:
+		operator_option = parse_m_operator_equal_option(option);
+		if(operator_option == (void *)-1) {
+			eno = -2;
+			goto err;
+		}
 
-			if(operator_option && operator_option->binary_string) {
-				len = strlen(value);
-				bytes = malloc(len);
-				if(bytes == NULL) {
-					eno = -3;
-					goto err;
-				}
-
-				len = bytes_string_2_bytes(value, bytes, len);
-				if(len < 0) {
-					eno = -2;
-					goto err;
-				}
-				bytes[len] = 0;
-				operation->value_p = bytes;
-				operation->value_len = len;
-			} else {
-				if((operation->value_p = strdup(value)) == NULL) {
-					eno = -3;
-					goto err;
-				}
-				operation->value_len = strlen(value);
-			}
-
-			operation->operator_option = operator_option;
-
-			break;
-		case MRT_BYTES:
-			operator_option = parse_m_operator_equal_option(option);
-			if(operator_option == (void *)-1) {
-				eno = -2;
-				goto err;
-			}
-
-			if(operator_option && (operator_option->ignore_case || operator_option->binary_string)) {
-				eno = -5;
-				goto err;
-			}
-
+		if(operator_option && operator_option->binary_string) {
 			len = strlen(value);
 			bytes = malloc(len);
 			if(bytes == NULL) {
@@ -356,38 +318,76 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 				eno = -2;
 				goto err;
 			}
-
+			bytes[len] = 0;
 			operation->value_p = bytes;
 			operation->value_len = len;
-			operation->operator_option = operator_option;
+		} else {
+			if((operation->value_p = strdup(value)) == NULL) {
+				eno = -3;
+				goto err;
+			}
+			operation->value_len = strlen(value);
+		}
 
-			break;
-		default:
-			eno = -4;
+		operation->operator_option = operator_option;
+
+		break;
+	case MRT_BYTES:
+		operator_option = parse_m_operator_equal_option(option);
+		if(operator_option == (void *)-1) {
+			eno = -2;
 			goto err;
-			break;
+		}
+
+		if(operator_option && (operator_option->ignore_case || operator_option->binary_string)) {
+			eno = -5;
+			goto err;
+		}
+
+		len = strlen(value);
+		bytes = malloc(len);
+		if(bytes == NULL) {
+			eno = -3;
+			goto err;
+		}
+
+		len = bytes_string_2_bytes(value, bytes, len);
+		if(len < 0) {
+			eno = -2;
+			goto err;
+		}
+
+		operation->value_p = bytes;
+		operation->value_len = len;
+		operation->operator_option = operator_option;
+
+		break;
+	default:
+		eno = -4;
+		goto err;
+		break;
 	}
 
 
 	return 0;
 err:
 	switch(eno) {
-		case -1:
-			ERROR("null value \n");
-			break;
-		case -2:
-			ERROR("parse option %s or value %s error \n", 
-					option == NULL ? "" : option, value);
-			break;
-		case -3:
-			ERROR("malloc error @%s:%d \n", __func__, __LINE__);
-			break;
-		case -4:
-			ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
-			break;
-		case -5:
-			ERROR("MRT_BYTES do not support I or B option (%s) \n", option);
-			break;
+	case -1:
+		ERROR("null value \n");
+		break;
+	case -2:
+		ERROR("parse option %s or value %s error \n", 
+				option == NULL ? "" : option, value);
+		break;
+	case -3:
+		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
+		break;
+	case -4:
+		ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
+		break;
+	case -5:
+		ERROR("MRT_BYTES do not support I or B option (%s) \n", option);
+		break;
 	}
 
 	return -1;
@@ -400,12 +400,12 @@ int m_operator_equal_value(struct m_operation *operation)
 	struct equal_operator_option *option = NULL;
 
 	switch(operation->var->store_type) {
-		case MST_ADDRESS:
-			p = operation->var->var_addr;
-			break;
-		case MST_POINTER_ADDRESS:
-			p = *(void **)(operation->var->var_addr);
-			break;
+	case MST_ADDRESS:
+		p = operation->var->var_addr;
+		break;
+	case MST_POINTER_ADDRESS:
+		p = *(void **)(operation->var->var_addr);
+		break;
 	}
 
 	if(p == NULL) {
@@ -417,69 +417,69 @@ int m_operator_equal_value(struct m_operation *operation)
 	}   
 
 	switch(operation->var->real_type) {
-		case MRT_UINT8:
-		case MRT_INT8:
-			return *((uint8_t *)(p)) == (uint8_t)(operation->value_i);
-			break;
-		case MRT_UINT16:
-		case MRT_INT16:
-			return *((uint16_t *)(p)) == (uint16_t)(operation->value_i);
-			break;
-		case MRT_UINT32:
-		case MRT_INT32:
-			return *((uint32_t *)(p)) == (uint32_t)(operation->value_i);
-			break;
-		case MRT_UINT64:
-		case MRT_INT64:
-			return *((uint64_t *)(p)) == (uint64_t)(operation->value_i);
-			break;
-		case MRT_STRING:	
-			option = (struct equal_operator_option *)operation->operator_option;
-			if(option) {
-				size_t start = option->start;
-				size_t end = option->end == 0 ? plen : (size_t)option->end;
+	case MRT_UINT8:
+	case MRT_INT8:
+		return *((uint8_t *)(p)) == (uint8_t)(operation->value_i);
+		break;
+	case MRT_UINT16:
+	case MRT_INT16:
+		return *((uint16_t *)(p)) == (uint16_t)(operation->value_i);
+		break;
+	case MRT_UINT32:
+	case MRT_INT32:
+		return *((uint32_t *)(p)) == (uint32_t)(operation->value_i);
+		break;
+	case MRT_UINT64:
+	case MRT_INT64:
+		return *((uint64_t *)(p)) == (uint64_t)(operation->value_i);
+		break;
+	case MRT_STRING:	
+		option = (struct equal_operator_option *)operation->operator_option;
+		if(option) {
+			size_t start = option->start;
+			size_t end = option->end == 0 ? plen : (size_t)option->end;
 
-				if(start > plen || end > plen) {
-					return 0;
-				}
-
-				p += start;
-				plen = (end - start);
-			}
-
-			if(plen != operation->value_len) {
+			if(start > plen || end > plen) {
 				return 0;
 			}
 
-			if(option && option->ignore_case) {
-				return (strncasecmp((char *)p, (char *)operation->value_p, plen) == 0);
-			} else {
-				return (strncmp((char *)p, (char *)operation->value_p, plen) == 0);
-			}
+			p += start;
+			plen = (end - start);
+		}
 
-			break;
-		case MRT_BYTES:
-			option = (struct equal_operator_option *)operation->operator_option;
-			if(option) {
-				size_t start = option->start;
-				size_t end = option->end == 0 ? plen : (size_t)option->end;
+		if(plen != operation->value_len) {
+			return 0;
+		}
 
-				if(start > plen || end > plen) {
-					return 0;
-				}
+		if(option && option->ignore_case) {
+			return (strncasecmp((char *)p, (char *)operation->value_p, plen) == 0);
+		} else {
+			return (strncmp((char *)p, (char *)operation->value_p, plen) == 0);
+		}
 
-				p += start;
-				plen = (end - start);
-			}
+		break;
+	case MRT_BYTES:
+		option = (struct equal_operator_option *)operation->operator_option;
+		if(option) {
+			size_t start = option->start;
+			size_t end = option->end == 0 ? plen : (size_t)option->end;
 
-			if(plen != operation->value_len) {
+			if(start > plen || end > plen) {
 				return 0;
 			}
 
-			return (memcmp(p, operation->value_p, plen) == 0);
+			p += start;
+			plen = (end - start);
+		}
 
-			break;
-		default:
+		if(plen != operation->value_len) {
+			return 0;
+		}
+
+		return (memcmp(p, operation->value_p, plen) == 0);
+
+		break;
+	default:
 			break;
 	}
 
@@ -489,15 +489,15 @@ int m_operator_equal_value(struct m_operation *operation)
 void m_operator_equal_clean(struct m_operation *operation)
 {
 	switch(operation->var->real_type) {
-		case MRT_STRING:
-		case MRT_BYTES:
-			if(operation->value_p) {
-				free(operation->value_p);
-				operation->value_p = NULL;
-			}
-			break;
-		default:
-			break;
+	case MRT_STRING:
+	case MRT_BYTES:
+		if(operation->value_p) {
+			free(operation->value_p);
+			operation->value_p = NULL;
+		}
+		break;
+	default:
+		break;
 	}
 
 	operation->var = NULL;
