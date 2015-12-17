@@ -51,7 +51,7 @@ static inline int nprintf(const char *str, int len)
 }
 
 /* "AB EF CD"  -> {AB,EF,CD} */
-static inline int bytes_string_2_bytes(char *str, uint8_t bytes[], int b_len)
+static inline int bytes_string_2_bytes(const char *str, uint8_t bytes[], int b_len)
 {
 	int eno = 0;
 	int len = 0;
@@ -76,13 +76,12 @@ static inline int bytes_string_2_bytes(char *str, uint8_t bytes[], int b_len)
 		}
 
 		num = strtol(p, &end_ptr, 16);
-		if(errno == ERANGE || end_ptr != NULL) {
+		if(errno != 0 || end_ptr == p) {
 			eno = -2;
 			goto err;
 		}
 
-		bytes[len++] = (uint8_t)(num & 0x0f);
-		bytes[len++] = (uint8_t)(num & 0xf0);
+		bytes[len++] = (uint8_t)num;
 	}
 	
 	if(p) {

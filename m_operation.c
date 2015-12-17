@@ -146,7 +146,10 @@ void m_operation_clean(struct m_operation *operation)
 	assert(operation && operation->op);
 
 	operation->op->clean(operation);
-
+    
+    free(operation);
+    operation = NULL;
+    
 	return;
 }
 

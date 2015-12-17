@@ -270,7 +270,60 @@ void string_equal_test()
 	assert(m_operator_equal_value(&op7) == 1);
 	assert(m_operator_equal_value(&op8) == 0);
 
+	m_operator_equal_clean(&op0);
+	m_operator_equal_clean(&op1);
+	m_operator_equal_clean(&op2);
+	m_operator_equal_clean(&op3);
+	m_operator_equal_clean(&op4);
+	m_operator_equal_clean(&op5);
+	m_operator_equal_clean(&op6);
+	m_operator_equal_clean(&op7);
+	m_operator_equal_clean(&op8);
 
+	/*
+	 * option  B
+	 */
+
+	/* e8 a7 84 e5 88 99  -- guize in chinese - utf-8
+	 * b9 e6 d4 f2 -- guize in chinese - ansi 
+	 * 61 0a -- a utf-8
+	 * 41 0a -- A utf-8
+	 * 42 0a -- B utf-8
+	 */
+	char a1[] = {0xe8, 0xa7, 0x84, 0xe5, 0x88, 0x99, 0x00};	/* guize */
+	char a2[] = {0x61, 0x0a, 0xe8, 0xa7, 0x84, 0xe5, 0x88, 0x99, 0x00};	/* a + guize */
+	char b1[] = {0xb9, 0xe6, 0xd4, 0xf2, 0x00};
+
+	struct m_variable var5 = {"string1", MST_POINTER_ADDRESS, MRT_STRING, &p, &slen, M_VARIABLE_LIST_NULL};
+
+	assert(m_operator_equal_init(&var5, "[][IB]", "abcde", &op2) != 0);
+
+	assert(m_operator_equal_init(&var5, "[][B]",  "e8 a7 84 e5 88 99 ", &op1) == 0);
+	assert(m_operator_equal_init(&var5, "[][B]",  "61 0a e8 a7 84 e5 88 99 ", &op2) == 0);
+	assert(m_operator_equal_init(&var5, "[][B]",  "b9 e6 d4 f2 ", &op3) == 0);
+	assert(m_operator_equal_init(&var5, "[2,8][B]",  "e8 a7 84 e5 88 99 ", &op4) == 0);
+
+	p = a1;
+	slen = strlen(a1);
+	assert(m_operator_equal_value(&op1) == 1);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 0);
+
+	p = a2;
+	slen = strlen(a2);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 1);
+	assert(m_operator_equal_value(&op3) == 0);
+	assert(m_operator_equal_value(&op4) == 1);
+
+	p = b1;
+	slen = strlen(b1);
+	assert(m_operator_equal_value(&op1) == 0);
+	assert(m_operator_equal_value(&op2) == 0);
+	assert(m_operator_equal_value(&op3) == 1);
+	assert(m_operator_equal_value(&op4) == 0);
+	
 	return;
 }
 

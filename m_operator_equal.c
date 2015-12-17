@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <errno.h>
 #include "m_log.h"
+#include "m_common.h"
 #include "m_variable.h"
 #include "m_operation.h"
 #include "m_operator_equal.h"
@@ -120,6 +121,11 @@ struct equal_operator_option *parse_m_operator_equal_option(const char *option)
 		op.binary_string = 1;
 	}
 
+	if(op.ignore_case && op.binary_string) {
+		eno = -5;
+		goto err;
+	}
+
 	if((pop = malloc(sizeof(struct equal_operator_option))) == NULL) {
 		eno = -4;
 		goto err;
@@ -142,6 +148,9 @@ err:
 	case -2:
 	case -3:
 		ERROR("illegal option %s \n", option);
+		break;
+	case -5:
+		ERROR("illegal option %s , do not support [I] coexist with [B] \n", option);
 		break;
 	}
 
@@ -245,9 +254,8 @@ err:
 /* TODO: do not support option now! equal(var_name[][]: value) */
 int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
 {
-	(void)option;
-
 	int eno = 0;
+	struct equal_operator_option *operator_option = NULL;
 
 	if(value == NULL) {
 		eno = -1;
@@ -272,20 +280,41 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 			}
 			break;
 		case MRT_STRING:
-			operation->operator_option = parse_m_operator_equal_option(option);
-			if(operation->operator_option == (void *)-1) {
-				eno = -3;
+			operator_option = parse_m_operator_equal_option(option);
+			if(operator_option == (void *)-1) {
+				eno = -2;
 				goto err;
 			}
-			if((operation->value_p = strdup(value)) == NULL) {
-				eno = -4;
-				goto err;
+
+			if(operator_option && operator_option->binary_string) {
+				int len = strlen(value);
+				uint8_t *bytes = malloc(len);
+				if(bytes == NULL) {
+					eno = -3;
+					goto err;
+				}
+
+				len = bytes_string_2_bytes(value, bytes, len);
+				if(len < 0) {
+					eno = -2;
+					goto err;
+				}
+				bytes[len] = 0;
+				operation->value_p = bytes;
+				operation->value_len = len;
+			} else {
+				if((operation->value_p = strdup(value)) == NULL) {
+					eno = -3;
+					goto err;
+				}
+				operation->value_len = strlen(value);
 			}
-			operation->value_len = strlen(value);
+
+			operation->operator_option = operator_option;
 
 			break;
 		default:
-			eno = -5;
+			eno = -4;
 			goto err;
 			break;
 	}
@@ -298,13 +327,13 @@ err:
 			ERROR("null value \n");
 			break;
 		case -2:
+			ERROR("parse option %s or value %s error \n", 
+					option == NULL ? "" : option, value);
 			break;
 		case -3:
-			break;
-		case -4:
 			ERROR("malloc error @%s:%d \n", __func__, __LINE__);
 			break;
-		case -5:
+		case -4:
 			ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
 			break;
 	}
