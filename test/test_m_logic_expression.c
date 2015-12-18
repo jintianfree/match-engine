@@ -4,9 +4,13 @@ int parse_sentence_func(const char *sentence, union sentence_info *info, void *a
 {
 	(void)arg;
 	if(sentence[0] == '0') {
-		info->value = 0;
+		/* info->value = 0; */
+		info->data = NULL;	/* test memory leak */
 	} else if(sentence[0] == '1'){
-		info->value = 1;
+		/* info->value = 1; */
+		if((info->data = malloc(5)) == NULL) {
+			return -1;
+		}
 	} else {
 		return -1;
 	}
@@ -16,12 +20,20 @@ int parse_sentence_func(const char *sentence, union sentence_info *info, void *a
 
 int sentence_value_func(union sentence_info *info)
 {
-	return info->value;
+	return (info->data != NULL);
+}
+
+void sentence_clean_func(union sentence_info *info)
+{
+	if(info->data) {
+		free(info->data);
+		info->data = NULL;
+	}
 }
 
 struct m_sentence_handle handle = {
 	.parse = parse_sentence_func,
-	.clean = NULL,
+	.clean = sentence_clean_func,
 	.value = sentence_value_func,
 };
 
