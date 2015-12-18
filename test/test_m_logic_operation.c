@@ -37,6 +37,8 @@ int main()
 	var3_len = 3;
 	m_logic_operation_value(&logic_op);
 
+	m_logic_operation_clean(&logic_op);
+
 	m_variable_list_unregister(&head, vars);
 
 	return 0;

@@ -254,6 +254,10 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 		break;
 	}
 
+	if(start) {
+		free(start);
+		start = NULL;
+	}
 	return 0;
 err:
 	switch(eno) {
@@ -263,6 +267,11 @@ err:
 	case -2:
 		ERROR("value (%s) overflow  type (%s) \n", value, m_real_type_2_str(var->real_type));
 		break;
+	}
+
+	if(start) {
+		free(start);
+		start = NULL;
 	}
 
 	return -1;
