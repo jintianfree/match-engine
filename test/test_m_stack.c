@@ -8,10 +8,14 @@ int main()
 	int i = 0;
 	int j = 0;
 
-	m_stack_init(&stack);
+	assert(m_stack_init(&stack) == 0);
 
 	for(i = 1; m_stack_push(&stack, i) == 0; i++) {
 	}
+
+	assert(i > 1);
+	assert(m_stack_empty(&stack) == 0);
+
 	printf("stack full %d \n", i);
 
 	i -= 1;
@@ -21,6 +25,9 @@ int main()
 		i--;
 		printf("j %d \n", j);
 	}
+
+	assert(i == 0);
+	assert(m_stack_empty(&stack) == 1);
 
 	m_stack_clean(&stack);
 

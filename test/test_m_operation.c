@@ -67,5 +67,7 @@ int main()
 	m_operation_clean(op4);
 	m_operation_clean(op5);
 
+	m_variable_list_unregister(&head, vars);
+
 	return 0;
 }

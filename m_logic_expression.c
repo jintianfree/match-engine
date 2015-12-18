@@ -46,10 +46,15 @@
 struct m_logic_sentence {
 	struct m_binary_tree_node node;	/* must first, so &node == &m_logic_sentence */
 	char *sentence;
+#define SENTENCE_PARSE_ERROR	-1
+#define SENTENCE_NULL			0
+#define SENTENCE_UNPARSE		1
+#define SENTENCE_PARSED			2
+	int state;
 	union sentence_info info;
 };
 
-struct m_logic_sentence *expression_to_sentence_tree(const char *expression);
+struct m_logic_sentence *create_sentence_tree(const char *expression);
 static void release_sentence_tree(struct m_logic_sentence *s);
 
 static int first_op_pos(const char *expression)
@@ -323,9 +328,10 @@ static struct m_logic_sentence *new_logic_sentence()
 
 	m_binary_tree_zero_node(&s->node);
 	s->sentence = NULL;
+	s->state = SENTENCE_NULL;
 	s->info.data = NULL;
 	s->info.value = 0;
-	s->info.operator = 0;
+	s->info.op = 0;
 
 	return s;
 err:
@@ -342,7 +348,7 @@ static void free_logic_sentence(struct m_logic_sentence *s)
 }
 
 #define MAX_SENTENCE_NUM		1024
-struct m_logic_sentence *expression_to_sentence_tree(const char *expression)
+struct m_logic_sentence *create_sentence_tree(const char *expression)
 {
 	int i = 0;
 	int eno = 0;
@@ -392,7 +398,9 @@ struct m_logic_sentence *expression_to_sentence_tree(const char *expression)
 			}
 		}
 
+		/* TODO: check NULL */
 		node->sentence = strdup(suffix[i]);
+		node->state = SENTENCE_UNPARSE;
 		m_stack_push(&s, (intptr_t)node);
 	}
 	
@@ -453,15 +461,13 @@ static void release_sentence_tree(struct m_logic_sentence *s)
 
 static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 {
+	int eno = 0;
 	struct m_logic_sentence *n = (struct m_logic_sentence *)node;
 
 	if(is_logical_operator(n->sentence[0])) {
-		n->info.operator = n->sentence[0];
-		goto end;
-	}
+		n->info.op = n->sentence[0];
 
-	if(!arg) {
-		goto end;
+		return 0;
 	}
 
 	int i = 0;
@@ -469,8 +475,8 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 	int len = strlen(n->sentence);
 	char *s = malloc(len + 1);	/* +1 for \0 */
 	if(s == NULL) {
-		ERROR("couldn't malloc enough memory to contain(%s) \n", n->sentence);
-		goto end;
+		eno = -1;
+		goto err;
 	} 
 
 	for(i = 0; i < len; i++) {
@@ -482,14 +488,40 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 	}
 	s[j] = 0;
 
-	struct {parse_sentence_func_p func; void *arg;} *args = arg;
-	parse_sentence_func_p func = (parse_sentence_func_p)args->func;
-	func(s, &n->info, args->arg);
+	struct {struct m_sentence_handle *handle; void *arg;} *args = arg;
+	struct m_sentence_handle *handle = args->handle;
 
-	free(s);
+	if(handle->parse(s, &n->info, args->arg) != 0) {
+		eno = -2;
+		goto err;
+	}
 
-end:
+	n->state = SENTENCE_PARSED;
+
+	if(s) {
+		free(s);
+		s = NULL;
+	}
+
 	return 0;
+
+err:
+	switch(eno) {
+	case -1:
+		ERROR("couldn't malloc enough memory to contain(%s) \n", n->sentence);
+		break;
+	case -2:
+		break;
+	}
+
+	if(s) {
+		free(s);
+		s = NULL;
+	}
+
+	n->state = SENTENCE_PARSE_ERROR;
+
+	return -1;
 }
 
 static int clean_sentence(struct m_binary_tree_node *node, void *arg)
@@ -497,8 +529,8 @@ static int clean_sentence(struct m_binary_tree_node *node, void *arg)
 	struct m_logic_sentence *n = (struct m_logic_sentence *)node;
 
 	if(!is_logical_operator(n->sentence[0])) {
-		if(arg) {
-			clean_sentence_func_p func = (clean_sentence_func_p)arg;
+		if(arg && n->state == SENTENCE_PARSED) {
+			sentence_clean func = (sentence_clean)arg;
 			func(&n->info);
 		}
 	}
@@ -507,7 +539,7 @@ static int clean_sentence(struct m_binary_tree_node *node, void *arg)
 }
 
 static int m_logic_sentence_evaluate(struct m_binary_tree_node *node, 
-		sentence_value_func_p func)
+		sentence_value func)
 {
 	assert(node);
 
@@ -522,7 +554,7 @@ static int m_logic_sentence_evaluate(struct m_binary_tree_node *node,
 		goto end;
 	}
 
-	if(s->info.operator == '!') {
+	if(s->info.op == '!') {
 		assert(s->node.left == NULL);
 		right_value = m_logic_sentence_evaluate(s->node.right, func);
 
@@ -533,11 +565,11 @@ static int m_logic_sentence_evaluate(struct m_binary_tree_node *node,
 
 	left_value = m_logic_sentence_evaluate(s->node.left, func);
 
-	if(s->info.operator == '&' && left_value == 0) {
+	if(s->info.op == '&' && left_value == 0) {
 		value = 0;
 		DEBUG("%d & ? = %d \n", left_value, value);
 		goto end;
-	} else if(s->info.operator == '|' && left_value == 1) {
+	} else if(s->info.op == '|' && left_value == 1) {
 		value = 1;
 		DEBUG("%d | ? = %d \n", left_value, value);
 		goto end;
@@ -547,11 +579,11 @@ static int m_logic_sentence_evaluate(struct m_binary_tree_node *node,
 
 	right_value = m_logic_sentence_evaluate(s->node.right, func);
 
-	if(s->info.operator == '&') {
+	if(s->info.op == '&') {
 		value = left_value & right_value;
 		DEBUG("%d & %d = %d \n", left_value, right_value, value);
 		goto end;
-	} else if(s->info.operator == '|') {
+	} else if(s->info.op == '|') {
 		value = left_value | right_value;
 		DEBUG("%d | %d = %d \n", left_value, right_value, value);
 		goto end;
@@ -563,46 +595,68 @@ end:
 	return value;
 }
 
-int m_logic_expression_init(struct m_logic_expression *lexp, 
-		const char *exp, parse_sentence_func_p func, void *arg)
+int  m_logic_expression_init(struct m_logic_expression *lexp, 
+		struct m_sentence_handle *handle, const char *exp, void *arg)
 {
-	assert(lexp && exp);
+	assert(lexp && handle && exp);
 
-	struct m_logic_sentence *s = NULL;
+	int eno = 0;
+	struct m_logic_sentence *root = NULL;
 
-	s = expression_to_sentence_tree(exp);
-	if(s == NULL) {
+	if((root = create_sentence_tree(exp)) == NULL) {
+		eno = -1;
 		goto err;
 	}
 
-	struct {parse_sentence_func_p func; void *arg;} args = {func, arg};
+	struct {struct m_sentence_handle *handle; void *arg;} args = {handle, arg};
 
-	m_binary_tree_traver_LDR(&s->node, parse_sentence, &args);
+	if(m_binary_tree_traver_LDR(&root->node, parse_sentence, &args) != 0) {
+		eno = -2;
+		goto err;
+	}
 
-	lexp->root = s;
+	lexp->root = root;
+	lexp->handle = handle;
 
 	return 0;
 err:
+	switch(eno) {
+	case -1:
+		break;
+	case -2:
+		/* some of sentence in exp has parsed, so must clean that */
+		m_binary_tree_traver_LDR(&root->node, clean_sentence, handle->clean);
+
+		release_sentence_tree(root);
+		break;
+	}
+	ERROR("m_logic_expression (%s)  init error (%d) \n", exp, eno);
+
 	return -1;
 }
 
-void m_logic_expression_clean(struct m_logic_expression *lexp, 
-		clean_sentence_func_p func)
+void m_logic_expression_clean(struct m_logic_expression *lexp)
 {
-	assert(lexp && lexp->root);
+	assert(lexp && lexp->root && lexp->handle);
 
-	m_binary_tree_traver_LDR(&lexp->root->node, clean_sentence, func);
+	m_binary_tree_traver_LDR(&lexp->root->node, clean_sentence, lexp->handle->clean);
 
 	release_sentence_tree(lexp->root);
 
 	lexp->root = NULL;
+	lexp->handle = NULL;
+
+	return;
 }
 
-int m_logic_expression_evaluate(struct m_logic_expression *lexp, 
-		sentence_value_func_p func)
+int m_logic_expression_evaluate(struct m_logic_expression *lexp)
 {
-	assert(lexp && lexp->root);
+	assert(lexp && lexp->root && lexp->handle);
 
-	return m_logic_sentence_evaluate(&lexp->root->node, func);
+	int value = 0;
+
+	value = m_logic_sentence_evaluate(&lexp->root->node, lexp->handle->value);
+
+	return value;
 }
 

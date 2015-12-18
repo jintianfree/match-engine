@@ -44,7 +44,7 @@ int op_string_contain(void *var_addr, int var_len, void *value_addr, int value_l
 }
 
 /* parse equal(int_var:0)  equal(string_var:abc) contain(string_var:abc) */
-void parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
+int parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
 {
 	char buf[2048];
 	struct var_descr *vars = (struct var_descr *)arg;
@@ -58,7 +58,7 @@ void parse_sentence_func(const char *sentence, union sentence_info *info, void *
 
 	if(!op || !var_name || !var_value) {
 		printf("ERROR: unknown sentence (%s) \n", sentence);
-		return;
+		return -1;
 	} else {
 		printf("%s %s %s \n", op, var_name, var_value);
 	}
@@ -66,7 +66,7 @@ void parse_sentence_func(const char *sentence, union sentence_info *info, void *
 	struct op_info *opi = malloc(sizeof(struct op_info));
 	if(!opi) {
 		printf("ERROR: malloc error \n");
-		return;
+		return -1;
 	}
 
 	while(vars->var_addr != NULL) {
@@ -117,7 +117,7 @@ void parse_sentence_func(const char *sentence, union sentence_info *info, void *
 
 	info->data = opi;
 
-	return;
+	return 0;
 }
 
 int sentence_value_func(union sentence_info *info)
@@ -126,6 +126,11 @@ int sentence_value_func(union sentence_info *info)
 	return opi->op_func(opi->var->var_addr, *(opi->var->var_len), opi->value_addr, opi->value_len);
 }
 
+struct m_sentence_handle handle = {
+	.parse = parse_sentence_func,
+	.clean = NULL,
+	.value = sentence_value_func,
+};
 
 int main()
 {
@@ -142,16 +147,16 @@ int main()
 		{"", NULL, NULL, 0},
 	};
 
-	m_logic_expression_init(&exp, "(equal(int_var:0)|!equal(string_var:123))&(contain(string_var:2)|equal(int_var:1)", parse_sentence_func, vars);
+	m_logic_expression_init(&exp, &handle, "(equal(int_var:0)|!equal(string_var:123))&(contain(string_var:2)|equal(int_var:1)", vars);
 	int_var = 0;
 	strcpy(string_var, "123");
 	string_var_len = strlen(string_var);
 
-	m_logic_expression_evaluate(&exp, sentence_value_func);
+	m_logic_expression_evaluate(&exp);
 
 	int_var = 1;
-	m_logic_expression_evaluate(&exp, sentence_value_func);
-	m_logic_expression_clean(&exp, NULL);
+	m_logic_expression_evaluate(&exp);
+	m_logic_expression_clean(&exp);
 	return 0;
 }
 

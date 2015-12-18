@@ -1,13 +1,17 @@
 #include "../m_logic_expression.c"
 
-void parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
+int parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
 {
 	(void)arg;
 	if(sentence[0] == '0') {
 		info->value = 0;
-	} else {
+	} else if(sentence[0] == '1'){
 		info->value = 1;
+	} else {
+		return -1;
 	}
+
+	return 0;
 }
 
 int sentence_value_func(union sentence_info *info)
@@ -15,19 +19,27 @@ int sentence_value_func(union sentence_info *info)
 	return info->value;
 }
 
-struct expression_value {
-	char *expression;
-	int  value;
+struct m_sentence_handle handle = {
+	.parse = parse_sentence_func,
+	.clean = NULL,
+	.value = sentence_value_func,
 };
 
 int main()
 {
 	struct m_logic_expression exp;
 
-	struct expression_value right_expression[] = {
+	struct {
+		char *expression;
+		int  value;
+	} right_expression[] = {
 		{"0", 0},
+		{"{0}", 0},
 		{"1", 1},
+		{"{1}", 1},
 		{"!0", 1},
+		{"{!0}", 1},
+		{"!{0}", 1},
 		{"!1", 0},
 		{"0 & 0", 0},
 		{"0 & 1", 0},
@@ -46,24 +58,32 @@ int main()
 		{NULL, 0}
 	};
 
-	struct expression_value wrong_expression[] = {
+	struct {
+		char *expression;
+		int  value;
+	} wrong_expression[] = {
 		{" 1 &", -1},
 		{"{1 & 1", -1},
 		{"{1 & 1} & {1 & 0} ! {!{1 & 0} | {0 & 0}} | !{1 & 1 & 0}", -1},
+		{"a", -1},
+		{"{a}", -1},
+		{"{ 1 & b }", -1},
+		{"{ 1 & 1 & b }", -1},
+		{"1 & 1 & 1 & 1 & 1 & 1 & b", -1},
 		{NULL, 0}
 	};
 
 	int i = 0;
 	while(right_expression[i].expression != NULL) {
-		assert(m_logic_expression_init(&exp, right_expression[i].expression, parse_sentence_func, NULL) == 0);
-		assert(m_logic_expression_evaluate(&exp, sentence_value_func) == right_expression[i].value);
-		m_logic_expression_clean(&exp, NULL);
+		assert(m_logic_expression_init(&exp, &handle, right_expression[i].expression, NULL) == 0);
+		assert(m_logic_expression_evaluate(&exp) == right_expression[i].value);
+		m_logic_expression_clean(&exp);
 		i++;
 	}
 
 	i = 0;
 	while(wrong_expression[i].expression != NULL) {
-		assert(m_logic_expression_init(&exp, wrong_expression[i].expression, parse_sentence_func, NULL) < 0);
+		assert(m_logic_expression_init(&exp, &handle, wrong_expression[i].expression, NULL) < 0);
 		i++;
 	}
 

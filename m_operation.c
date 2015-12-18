@@ -24,6 +24,9 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 	char *value = NULL;
 	char *option = NULL;
 
+	struct m_variable *var = NULL;
+	struct m_operation *operation = NULL;
+
 	assert(str);
 
 	p = strdup(str);
@@ -92,13 +95,11 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 		goto err;
 	}
 
-	struct m_variable *var = NULL;
 	if((var = m_variable_name_2_var(head, var_name)) == NULL) {
 		eno  = -4;
 		goto err;
 	}
 
-	struct m_operation *operation = NULL;
 	if((operation = malloc(sizeof(struct m_operation))) == NULL) {
 		eno = -5;
 		goto err;
