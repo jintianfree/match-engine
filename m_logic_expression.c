@@ -374,8 +374,7 @@ struct m_logic_sentence *create_sentence_tree(const char *expression)
 	}
 
 	for(i = 0; i < ns; i++) {
-		node = new_logic_sentence();
-		if(node == NULL) {
+		if((node = new_logic_sentence()) == NULL) {
 			eno = -3;
 			goto err;
 		}
@@ -399,14 +398,17 @@ struct m_logic_sentence *create_sentence_tree(const char *expression)
 		}
 
 		/* TODO: check NULL */
-		node->sentence = strdup(suffix[i]);
+		if((node->sentence = strdup(suffix[i])) == NULL) {
+			eno = -5;
+			goto err;
+		}
 		node->state = SENTENCE_UNPARSE;
 		m_stack_push(&s, (intptr_t)node);
 	}
 	
 	node = (struct m_logic_sentence *)m_stack_pop(&s);
 	if(m_stack_top(&s) != 0) {
-		eno = -5;
+		eno = -6;
 		goto err;
 	}
 
@@ -429,6 +431,10 @@ err:
 		release_sentence_tree(node);
 		break;
 	case -5:
+		ERROR("malloc fail \n");
+		release_sentence_tree(node);
+		break;
+	case -6:
 		ERROR("illegal expression, short of logic operator :%s\n", expression);
 		release_sentence_tree(node);
 		break;
@@ -448,7 +454,10 @@ static int release_sentence_tree_node(struct m_binary_tree_node *node, void *arg
 {
 	(void)arg;
 	struct m_logic_sentence *n = (struct m_logic_sentence *)node;
-	free(n->sentence);
+	if(n->sentence) {
+		free(n->sentence);
+		n->sentence = NULL;
+	}
 	free_logic_sentence(n);
 
 	return 0;
@@ -486,6 +495,11 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 	
 		s[j++] = n->sentence[i];
 	}
+	if(j == 0) {
+		eno = -2;
+		goto err;
+	}
+
 	s[j] = 0;
 
 	struct {struct m_sentence_handle *handle; void *arg;} *args = arg;
@@ -508,9 +522,12 @@ static int parse_sentence(struct m_binary_tree_node *node, void *arg)
 err:
 	switch(eno) {
 	case -1:
-		ERROR("couldn't malloc enough memory to contain(%s) \n", n->sentence);
+		ERROR("couldn't malloc enough memory to contain: %s \n", n->sentence);
 		break;
+		ERROR("illegal sentence: %s \n", n->sentence);
 	case -2:
+		break;
+	case -3:
 		break;
 	}
 
