@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <assert.h>
+#include <limits.h>
 #include "m_log.h"
 #include "m_ini_parser.h"
 #include "m_ini_config.h"
@@ -19,37 +20,37 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 	switch(descr->type) {
 	case ICVT_STRING:
 		len = strlen(value);
-		if(len > descr->max_len) {
-			len = descr->max_len;
+		if(len > descr->max_len - 1) {
+			len = descr->max_len - 1;
 		}
 
 		strncpy(descr->addr, value, len);
-		((char *)descr->addr)[len - 1] = 0;
+		((char *)descr->addr)[len] = 0;
 		break;
 	case ICVT_INT:
 		lli = strtoll(value, &end, 10);
-		if(end != NULL || lli > INT_MAX || lli < INT_MIN) {
+		if((end && *end != 0)|| lli > INT_MAX || lli < INT_MIN) {
 			goto err;
 		}
 		*(int *)descr->addr = (int)lli;
 		break;
 	case ICVT_UINT:
 		ulli = strtoull(value, &end, 10);
-		if(end != NULL || ulli > UINT_MAX) {
+		if((end && *end != 0) || ulli > UINT_MAX) {
 			goto err;
 		}
 		*(unsigned int *)descr->addr = (unsigned int)ulli;
 		break;
 	case ICVT_LONG:
 		lli = strtoll(value, &end, 10);
-		if(end != NULL || lli > LONG_MAX || lli < LONG_MIN) {
+		if((end && *end != 0) || lli > LONG_MAX || lli < LONG_MIN) {
 			goto err;
 		}
-		*(long *)descr->addr = (long)ulli;
+		*(long *)descr->addr = (long)lli;
 		break;
 	case ICVT_ULONG:
 		ulli = strtoull(value, &end, 10);
-		if(end != NULL || ulli > ULONG_MAX) {
+		if((end && *end != 0) || ulli > ULONG_MAX) {
 			goto err;
 		}
 		*(unsigned long *)descr->addr = (unsigned long)ulli;
@@ -75,11 +76,44 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 	return 0;
 
 err:
-	ERROR("parse value:%s error on session:%s key: %s, "
-			"consist of illegal char or integer overflow", 
-			value, descr->section, descr->key);
 
 	return -1;
+}
+
+void m_ini_config_print_descr(struct m_ini_config_descr descr[])
+{
+	struct m_ini_config_descr *d = descr;
+
+	while(d->addr != NULL) {
+		printf("[%s] %s : ", d->section, d->key);
+	
+		switch(d->type) {
+		case ICVT_STRING:
+			printf("%s \n", (char *)d->addr);
+			break;
+		case ICVT_INT:
+			printf("%d \n", *(int *)d->addr);
+			break;
+		case ICVT_UINT:
+			printf("%u \n", *(unsigned int *)d->addr);
+			break;
+		case ICVT_LONG:
+			printf("%ld \n", *(long *)d->addr);
+			break;
+		case ICVT_ULONG:
+			printf("%lu \n", *(unsigned long *)d->addr);
+			break;
+		case ICVT_BOOL:
+			printf("%s \n", *(char *)d->addr == 0 ? "No" : "Yes");
+			break;
+		default:
+			printf("\n");
+		}
+
+		d++;
+	}
+
+	return;
 }
 
 /*
@@ -91,16 +125,18 @@ err:
  * n = value1
  * m = value2
  */
-int m_ini_config_read(const char *filename, struct m_ini_config_descr *descr)
+int m_ini_config_read(const char *filename, struct m_ini_config_descr descr[])
 {
 	assert(filename && descr);
 
+	int eno = 0;
 	char *value = NULL;
 	struct ini *ini = NULL;
 	struct read_ini *rini = NULL;
 	struct m_ini_config_descr *d = NULL;
 
 	if((ini = read_ini(&rini, filename)) == NULL) {
+		eno = -1;
 		goto err;
 	}
 
@@ -111,6 +147,7 @@ int m_ini_config_read(const char *filename, struct m_ini_config_descr *descr)
 		}
 
 		if(convert_value(value, d) != 0) {
+			eno  = -2;
 			goto err;
 		}
 	}
@@ -121,6 +158,14 @@ int m_ini_config_read(const char *filename, struct m_ini_config_descr *descr)
 	return 0;
 
 err:
+	switch(eno) {
+	case -2:
+		ERROR("parse value:%s error on file :%s section:%s key: %s, "
+				"consist of illegal char or integer overflow \n", 
+				filename, value, descr->section, descr->key);
+		break;
+	}
+
 	if(ini) {
 		destroy_ini(ini);
 		cleanup_readini(rini);
@@ -169,8 +214,10 @@ err:
 	return NULL;
 }
 
-int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr *descr)
+int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr descr[])
 {
+	assert(config);
+
 	char *value = NULL;
 	struct section *section = NULL;
 	struct m_ini_config_descr *d = NULL;
@@ -180,6 +227,7 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr *de
 	}
 
 	section = config->ini->sections[config->next_section];
+	config->next_section++;
 
 	for(d = descr; d->addr != NULL; d++) {
 		value = ini_get_value_in_section(section, d->key);
@@ -196,11 +244,16 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr *de
 	return 0;
 
 err:
+	ERROR("parse value:%s error on key: %s, "
+			"consist of illegal char or integer overflow \n", 
+			value, descr->key);
 	return -1;
 }
 
 void m_ini_config_clean(struct m_ini_config *config)
 {
+	assert(config);
+
 	destroy_ini(config->ini);
 	cleanup_readini(config->rini);
 
