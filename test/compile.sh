@@ -15,6 +15,8 @@ test_m_operator_null_dep="test_m_operator_null.c ../m_variable.c"
 test_m_operation_dep="test_m_operation.c ../m_variable.c ../m_operation.c ../m_operator_equal.c ../m_operator_null.c"
 test_m_common_dep="test_m_common.c"
 test_m_logic_operation_dep="test_m_logic_operation.c ../m_logic_operation.c ../m_logic_expression.c ../m_stack.c ../m_binary_tree.c ../m_variable.c ../m_operation.c ../m_operator_equal.c ../m_operator_null.c"
+test_m_ini_parser_dep="test_m_ini_parser.c ../m_ini_parser.c"
+test_m_ini_config_dep="test_m_ini_config.c ../m_ini_config.c ../m_ini_parser.c"
 
 
 ${CC} ${test_m_stack_dep} -o test_m_stack
@@ -26,3 +28,5 @@ ${CC} ${test_m_operator_null_dep} -o test_m_operator_null
 ${CC} ${test_m_operation_dep} -o test_m_operation
 ${CC} ${test_m_common_dep} -o test_m_common
 ${CC} ${test_m_logic_operation_dep} -o test_m_logic_operation
+${CC} ${test_m_ini_parser_dep} -o test_m_ini_parser
+${CC} ${test_m_ini_config_dep} -o test_m_ini_config
