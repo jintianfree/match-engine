@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include "m_log.h"
 #include "m_ini_parser.h"
@@ -17,6 +18,7 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 	long long int lli = 0;
 	unsigned long long int ulli = 0;
 
+	errno = 0;
 	switch(descr->type) {
 	case ICVT_STRING:
 		len = strlen(value);
@@ -29,28 +31,28 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 		break;
 	case ICVT_INT:
 		lli = strtoll(value, &end, 10);
-		if((end && *end != 0)|| lli > INT_MAX || lli < INT_MIN) {
+		if(errno != 0 || (end && *end != 0)|| lli > INT_MAX || lli < INT_MIN) {
 			goto err;
 		}
 		*(int *)descr->addr = (int)lli;
 		break;
 	case ICVT_UINT:
 		ulli = strtoull(value, &end, 10);
-		if((end && *end != 0) || ulli > UINT_MAX) {
+		if(errno != 0 || (end && *end != 0) || ulli > UINT_MAX) {
 			goto err;
 		}
 		*(unsigned int *)descr->addr = (unsigned int)ulli;
 		break;
 	case ICVT_LONG:
 		lli = strtoll(value, &end, 10);
-		if((end && *end != 0) || lli > LONG_MAX || lli < LONG_MIN) {
+		if(errno != 0 || (end && *end != 0) || lli > LONG_MAX || lli < LONG_MIN) {
 			goto err;
 		}
 		*(long *)descr->addr = (long)lli;
 		break;
 	case ICVT_ULONG:
 		ulli = strtoull(value, &end, 10);
-		if((end && *end != 0) || ulli > ULONG_MAX) {
+		if(errno != 0 || (end && *end != 0) || ulli > ULONG_MAX) {
 			goto err;
 		}
 		*(unsigned long *)descr->addr = (unsigned long)ulli;

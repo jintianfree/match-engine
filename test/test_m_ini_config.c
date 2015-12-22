@@ -35,7 +35,7 @@ value4=-2147483648
 
 [section6]
 # long min on x86-64
-value4=-9223372036854775807
+value4=-9223372036854775808
 # ulong max on x86-64
 value5=18446744073709551615
 
@@ -43,6 +43,9 @@ value5=18446744073709551615
 # long max on x86-64
 value4=9223372036854775807
 
+[section8]
+value2=-2147483649
+value4=9223372036854775808
  */
 
 int main()
@@ -121,6 +124,9 @@ int main()
 	/* section 7 */
 	assert(m_ini_config_next(config, descr) == -1);
 #endif
+
+	/* section 8 */
+	assert(m_ini_config_next(config, descr) == -1);
 
 	assert(m_ini_config_next(config, descr) == 1);
 	
