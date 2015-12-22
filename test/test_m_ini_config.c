@@ -108,13 +108,13 @@ int main()
 	assert(value4 == (-2147483647 - 1));
 	m_ini_config_print_descr(descr);
 
-#ifdef 	__x86_64
+# if __WORDSIZE == 64
 	/* section 6 */
 	assert(m_ini_config_next(config, descr) == 0);
 
 	/* section 7 */
 	assert(m_ini_config_next(config, descr) == 0);
-#else
+# else
 	/* section 6 */
 	assert(m_ini_config_next(config, descr) == -1);
 

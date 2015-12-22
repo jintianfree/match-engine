@@ -246,7 +246,7 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 err:
 	ERROR("parse value:%s error on key: %s, "
 			"consist of illegal char or integer overflow \n", 
-			value, descr->key);
+			value, d->key);
 	return -1;
 }
 
