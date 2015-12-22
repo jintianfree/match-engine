@@ -8,14 +8,15 @@ WAIT    -- waiting to be processed
 WAIT @20151201  m_logic_expression		do not support dynamic add rule
 OK   @20151218  m_operation_equal		do not support option
 WAIT @20151218  读配置文件匹配
-WAIT @20151218  action
+
 WAIT @20151218  基于会话的匹配  会话可以自定义
-WAIT @20151218  m_operation_pcre
+WAIT @20151218  m_operator_pcre
 WAIT @20151218  字符串"\n\t" 转换为真正的转义字符
 WAIT @20151218  字符串中 含 (:) []
 
-WAIT @20151218  m_ini.c
-WAIT @20151218  m_login_expression.c 
+WAIT @20151218  read ini config
+
+OK   @20151222  m_login_expression.c 
 
     struct m_logic_expression {
         struct m_logic_sentence *root;
@@ -23,6 +24,12 @@ WAIT @20151218  m_login_expression.c
     };
     
 
-WAIT @20151218  m_login_operation.c  
+OK   @20151222  m_login_operation.c  
 WAIT @20151218  m_logic_expression.c   parse_sentence   把所有的\char  都替换成了 char  会影响使用  应该只替换对我敏感的 \char  其他交由下一级处理
-ING  @20151218  m_logic_expression.c   在parse sentence 出现错误时  能返回  并clean 已经parse的sentence
+OK   @20151222  m_logic_expression.c   在parse sentence 出现错误时  能返回  并clean 已经parse的sentence
+
+WAIT @20151222  m_ini_parser.c  有内存泄露
+WAIT @20151222  m_operator_contain
+
+WAIT @20151218  m_action
+WAIT @20151222  m_rule   [RULE]  id = ;chain=;match=;action=name1 {var1} {var2} str1 str2;name2 {var1} {var2}
