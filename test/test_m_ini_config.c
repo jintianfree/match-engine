@@ -81,10 +81,10 @@ int main()
 	assert(config != NULL);
 
 	/* section 1 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 
 	/* section 2 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 	assert(strcmp(value1, "default value1") == 0);
 	assert(value2 == 2);
 	assert(value3 == 3);
@@ -93,12 +93,10 @@ int main()
 	assert(value6 == 1);
 
 	/* section 3 */
-	assert(m_ini_config_next(config, descr) == 0);
-	assert(strcmp(value1, "abcabcabcabcabc") == 0);
-	m_ini_config_print_descr(descr);
+	assert(m_ini_config_next(config, descr) == -1);
 
 	/* section 4 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 	assert(value2 == 2147483647);
 	assert(value3 == 4294967295U);
 	assert(value4 == 2147483647L);
@@ -106,17 +104,17 @@ int main()
 	assert(value6 == 1);
 
 	/* section 5 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 	assert(value2 == (-2147483647 - 1));
 	assert(value4 == (-2147483647 - 1));
 	m_ini_config_print_descr(descr);
 
 # if __WORDSIZE == 64
 	/* section 6 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 
 	/* section 7 */
-	assert(m_ini_config_next(config, descr) == 0);
+	assert(m_ini_config_next(config, descr) == 1);
 # else
 	/* section 6 */
 	assert(m_ini_config_next(config, descr) == -1);
@@ -128,7 +126,7 @@ int main()
 	/* section 8 */
 	assert(m_ini_config_next(config, descr) == -1);
 
-	assert(m_ini_config_next(config, descr) == 1);
+	assert(m_ini_config_next(config, descr) == 0);
 	
 	m_ini_config_clean(config);
 

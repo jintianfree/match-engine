@@ -23,7 +23,9 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 	case ICVT_STRING:
 		len = strlen(value);
 		if(len > descr->max_len - 1) {
-			len = descr->max_len - 1;
+			ERROR("length of %s (%d) >= max len of %s (%d) \n",
+					value, len, descr->key, descr->max_len);
+			goto err;
 		}
 
 		strncpy(descr->addr, value, len);
@@ -78,7 +80,6 @@ static int convert_value(const char *value, struct m_ini_config_descr *descr)
 	return 0;
 
 err:
-
 	return -1;
 }
 
@@ -163,7 +164,7 @@ err:
 	switch(eno) {
 	case -2:
 		ERROR("parse value:%s error on file :%s section:%s key: %s, "
-				"consist of illegal char or integer overflow \n", 
+				"consist of illegal char or string|integer overflow \n", 
 				filename, value, descr->section, descr->key);
 		break;
 	}
@@ -225,7 +226,7 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 	struct m_ini_config_descr *d = NULL;
 
 	if(config->next_section >= config->ini->num_sections) {
-		return 1;
+		return 0;
 	}
 
 	section = config->ini->sections[config->next_section];
@@ -243,11 +244,11 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 
 	}
 
-	return 0;
+	return 1;
 
 err:
 	ERROR("parse value:%s error on key: %s, "
-			"consist of illegal char or integer overflow \n", 
+			"consist of illegal char or string|integer overflow \n", 
 			value, d->key);
 	return -1;
 }

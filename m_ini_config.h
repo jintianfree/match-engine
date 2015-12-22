@@ -65,7 +65,7 @@ struct m_ini_config {
 };
 
 struct m_ini_config *m_ini_config_init(const char *filename);
-/* rtn: 0 - OK,  1 - end, -1 - error. */
+/* rtn: 1 - OK,  0 - end, -1 - error. */
 int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr descr[]);
 void m_ini_config_clean(struct m_ini_config *config);
 
