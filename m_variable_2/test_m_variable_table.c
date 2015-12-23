@@ -37,7 +37,6 @@ int main()
 	 */
 	struct m_variable_table_manager mgr ;
 	m_variable_table_manager_init(&mgr);
-	struct m_variable_table *table = m_variable_table_new(&mgr);
 
 
 	/*
@@ -45,14 +44,16 @@ int main()
 	 */
 	size_t base = m_variable_descr_register(&mgr, vars, sizeof(struct test_struct));
 	size_t base2 = m_variable_descr_register(&mgr, vars2, sizeof(struct test_struct2));
+	struct m_variable_table *table = m_variable_table_new(&mgr);
+
 
 	struct test_struct *p = table->base + base;
-	//p->uint32 = 32;
+	p->uint32 = 32;
 	strcpy(p->array32, "abc"); 
-	//p->pointer = p->array32;
+	p->pointer = p->array32;
 
-	//struct test_struct2 *p2 = table->base + base2;
-	//p2->uint8 = 145;
+	struct test_struct2 *p2 = table->base + base2;
+	p2->uint8 = 145;
 
 	m_variable_table_print(table);
 	printf("\n");

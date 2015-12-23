@@ -91,11 +91,9 @@ size_t m_variable_descr_register(struct m_variable_table_manager *manager, struc
 
 		memcpy(&(_descr->descr), &vars[i], sizeof(struct m_variable_descr));
 		_descr->descr.var_offset += base;
-		printf("-%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
 		_descr->descr.var_len_offset += base;	/* TODO: var_len_offset == 0 */
-		printf("--%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
+
 		m_variable_descr_list_insert(&manager->head, &(_descr->node));
-		printf("---%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
 	}
 
 	manager->size += size;
@@ -151,11 +149,10 @@ void m_variable_table_print(struct m_variable_table *table)
 		_descr = container_of(node, struct _m_variable_descr, node);
 		descr = &(_descr->descr);
 
-		printf("name %s store_type %d real_type %d offset %d var_len_offset %d \n",
-		descr->var_name, descr->store_type, descr->real_type, descr->var_offset, descr->var_len_offset);
 		void *p = NULL;
 
-		printf("name: %s type: %d value: ", descr->var_name, descr->real_type);
+		printf("name: %s type: %s value:", descr->var_name, 
+				m_variable_real_type_2_str(descr->real_type));
 
 		switch(descr->store_type) {
 		case MST_MEMORY:
@@ -189,7 +186,6 @@ void m_variable_table_print(struct m_variable_table *table)
 			printf("%s ", (char *)p);
 			break;
 		default:
-			printf("%u ", *(uint32_t *)p);
 			break;
 		}
 
