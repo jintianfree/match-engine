@@ -36,8 +36,6 @@ struct m_variable_descr {
 	size_t var_len_offset;
 };
 
-//#define M_VARIABLE_TABLE_MANAGER_NULL {0, {NULL, NULL}}
-
 #define M_VARIABLE_DESCR_LIST_NULL    {NULL, NULL}
 
 struct m_variable_descr_list {
@@ -52,6 +50,7 @@ struct m_variable_table_manager {
 };
 
 struct m_variable_table {
+	struct m_variable_table_manager *manager;
 	void *base;
 };
 
@@ -63,5 +62,9 @@ void m_variable_descr_unregister(struct m_variable_table_manager *manager, struc
 
 struct m_variable_table * m_variable_table_new(struct m_variable_table_manager *manager);
 void m_variable_table_free(struct m_variable_table *table);
-void m_variable_table_print(struct m_variable_table_manager *manager, struct m_variable_table *table);
+
+void m_variable_table_print(struct m_variable_table *table);
+const char *m_variable_real_type_2_str(enum m_var_real_type type);
+struct m_variable_descr *m_variable_descr_find_by_name(struct m_variable_table_manager *manager, const char *name);
+
 #endif

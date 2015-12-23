@@ -22,6 +22,7 @@ struct m_variable_table * m_variable_table_new(struct m_variable_table_manager *
 		goto err;
 	}
 	
+	table->manager = manager;
 	table->base = table + 1;
 
 	return table;
@@ -61,28 +62,20 @@ size_t m_variable_descr_register(struct m_variable_table_manager *manager, struc
 	int i = 0; 
 	int eno = 0;
 	size_t base = 0;
-	struct m_variable_descr_list *node = NULL;
 	struct m_variable_descr *descr = NULL;
 	struct _m_variable_descr *_descr = NULL;
 
 	assert(manager->head.prev == NULL);
 
 	/* check name, we don't allow two variable have same name. */
-	node = manager->head.next;
-	while(node != NULL) {
-		_descr = container_of(node, struct _m_variable_descr, node);
-		descr = &_descr->descr;
-
-		for(i = 0; vars[i].var_name[0] != 0; i++) {
-			if(strcmp(vars[i].var_name, descr->var_name) == 0) {
-				eno = -1;
-				goto err;
-			}
+	for(i = 0; vars[i].var_name[0] != 0; i++) {
+		descr = m_variable_descr_find_by_name(manager, vars[i].var_name);
+		if(descr) {
+			eno = -1;
+			goto err;
 		}
-
-		node = node->next;
 	}
-
+	
 	if(manager->size == 0) {
 		manager->size += 4;
 	}
@@ -98,8 +91,11 @@ size_t m_variable_descr_register(struct m_variable_table_manager *manager, struc
 
 		memcpy(&(_descr->descr), &vars[i], sizeof(struct m_variable_descr));
 		_descr->descr.var_offset += base;
+		printf("-%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
 		_descr->descr.var_len_offset += base;	/* TODO: var_len_offset == 0 */
+		printf("--%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
 		m_variable_descr_list_insert(&manager->head, &(_descr->node));
+		printf("---%d var_len_offset %d \n", _descr->descr.real_type, _descr->descr.var_len_offset);
 	}
 
 	manager->size += size;
@@ -108,7 +104,7 @@ size_t m_variable_descr_register(struct m_variable_table_manager *manager, struc
 err:
 	switch(eno) {
 	case -1:
-		ERROR("variable name %s has registered, try to use a different name \n", vars->var_name);
+		ERROR("variable name %s has registered, try to use a different name \n", descr->var_name);
 		break;
 	case -2:
 		/* TODO: free malloced */
@@ -122,29 +118,41 @@ err:
 
 void m_variable_descr_unregister(struct m_variable_table_manager *manager, struct m_variable_descr vars[])
 {
-	(void)manager;
-	(void)vars;
-	/* TODO: unregister */
+	int i = 0;
+	struct _m_variable_descr *_descr = NULL;
+	struct m_variable_descr *descr = NULL;
+
+	for(i = 0; vars[i].var_name[0] != 0; i++) {
+		descr = m_variable_descr_find_by_name(manager, vars[i].var_name);
+		if(descr) {
+			_descr = container_of(descr, struct _m_variable_descr, descr);
+			m_variable_descr_list_remove(&manager->head, &_descr->node);
+			free(_descr);
+			_descr = NULL;
+		}
+	}
 
 	return;
 }
 
-void m_variable_table_print(struct m_variable_table_manager *manager, struct m_variable_table *table)
+void m_variable_table_print(struct m_variable_table *table)
 {
+	struct m_variable_table_manager *manager = NULL;
 	struct m_variable_descr_list *node = NULL;
-	struct m_variable_descr_list *head = NULL;
 	struct _m_variable_descr *_descr = NULL;
 	struct m_variable_descr *descr = NULL;
 
-	head = &manager->head;
+	manager =  table->manager;
 
-	assert(head->prev == NULL);
+	assert(manager && manager->head.prev == NULL);
 
-	node = head->next;
+	node = manager->head.next;
 	while(node != NULL) {
 		_descr = container_of(node, struct _m_variable_descr, node);
-		descr = &_descr->descr;
+		descr = &(_descr->descr);
 
+		printf("name %s store_type %d real_type %d offset %d var_len_offset %d \n",
+		descr->var_name, descr->store_type, descr->real_type, descr->var_offset, descr->var_len_offset);
 		void *p = NULL;
 
 		printf("name: %s type: %d value: ", descr->var_name, descr->real_type);
@@ -159,37 +167,122 @@ void m_variable_table_print(struct m_variable_table_manager *manager, struct m_v
 		}
 
 		switch(descr->real_type) {
-    	case MRT_UINT8:
+		case MRT_UINT8:
 			printf("%u ", *(uint8_t *)p);
 			break;
-    	case MRT_UINT16:
+		case MRT_UINT16:
 			printf("%u ", *(uint16_t *)p);
 			break;
-    	case MRT_UINT32:
+		case MRT_UINT32:
 			printf("%u ", *(uint32_t *)p);
 			break;
-    	case MRT_INT8:
+		case MRT_INT8:
 			printf("%d ", *(int8_t *)p);
 			break;
-    	case MRT_INT16:
+		case MRT_INT16:
 			printf("%d ", *(int16_t *)p);
 			break;
-    	case MRT_INT32:
+		case MRT_INT32:
 			printf("%d ", *(int32_t *)p);
 			break;
 		case MRT_STRING:
 			printf("%s ", (char *)p);
 			break;
 		default:
+			printf("%u ", *(uint32_t *)p);
 			break;
 		}
 
-    	printf("\n");
+		printf("\n");
 
 		node = node->next;
 	}
 
+	return;
+}
 
+const char *m_variable_real_type_2_str(enum m_var_real_type type)
+{
+	static char name[12];
+
+	switch(type) {
+	case MRT_UINT8:
+		strcpy(name, "UINT8");
+		break;
+	case MRT_UINT16:
+		strcpy(name, "UINT16");
+		break;
+	case MRT_UINT32:
+		strcpy(name, "UINT32");
+		break;
+	case MRT_UINT64:
+		strcpy(name, "UINT64");
+		break;
+	case MRT_INT8:
+		strcpy(name, "INT8");
+		break;
+	case MRT_INT16:
+		strcpy(name, "INT16");
+		break;
+	case MRT_INT32:
+		strcpy(name, "INT32");
+		break;
+	case MRT_INT64:
+		strcpy(name, "INT64");
+		break;
+	case MRT_FLOAT:
+		strcpy(name, "FLOAT");
+		break;
+	case MRT_DOUBLE:
+		strcpy(name, "DOUBULE");
+		break;
+	case MRT_ABSOLUTE_TIME:
+		strcpy(name, "ABSOLUTE_TIME");
+		break;
+	case MRT_RELATIVE_TIME:
+		strcpy(name, "RELATIVE_TIME");
+		break;
+	case MRT_STRING:
+		strcpy(name, "STRING");
+		break;
+	case MRT_BYTES:
+		strcpy(name, "BYTES");
+		break;
+	case MRT_IPv4:
+		strcpy(name, "IPV4");
+		break;
+	case MRT_IPv6:
+		strcpy(name, "IPV6");
+		break;
+	default:
+		strcpy(name, "unknown type");
+		break;
+	}
+
+	return name;
+
+}
+
+struct m_variable_descr *m_variable_descr_find_by_name(struct m_variable_table_manager *manager, const char *name)
+{
+	struct m_variable_descr_list *node = NULL;
+	struct _m_variable_descr *_descr = NULL;
+	struct m_variable_descr *descr = NULL;
+
+	node = manager->head.next;
+
+	while(node != NULL) {
+		_descr = container_of(node, struct _m_variable_descr, node);
+		descr = &_descr->descr;
+
+		if(strcmp(descr->var_name, name) == 0) {
+			return descr;
+		}
+
+		node = node->next;
+	}
+
+	return NULL;
 }
 
 static void m_variable_descr_list_insert(struct m_variable_descr_list *head, struct m_variable_descr_list *node)
@@ -201,8 +294,8 @@ static void m_variable_descr_list_insert(struct m_variable_descr_list *head, str
 	}
 	
 	node->prev = head;
-    node->next = head->next;
-    head->next = node;
+	node->next = head->next;
+	head->next = node;
 
 	return;
 }
@@ -210,7 +303,7 @@ static void m_variable_descr_list_insert(struct m_variable_descr_list *head, str
 static void m_variable_descr_list_remove(struct m_variable_descr_list *head, struct m_variable_descr_list *node)
 {
 	assert(head->prev == NULL && head->next != NULL);
-    assert(node->prev != NULL);
+	assert(node->prev != NULL);
 
 #if 1
 	/* check if the node belongs to this list */
@@ -225,8 +318,8 @@ static void m_variable_descr_list_remove(struct m_variable_descr_list *head, str
 	}
 
 	if(node != next) {
-        goto err;
-    }
+		goto err;
+	}
 #endif 
 
 	if(node->next) {
@@ -235,11 +328,12 @@ static void m_variable_descr_list_remove(struct m_variable_descr_list *head, str
 
 	node->prev->next = node->next;
 
-    node->prev = NULL;
-    node->next = NULL;
+	node->prev = NULL;
+	node->next = NULL;
     
 	return;
 err:
-    ERROR("you are removeing a node not belongs to a list \n");
-    return;
+	ERROR("you are removeing a node not belongs to a list \n");
+	return;
 }
+
