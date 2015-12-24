@@ -31,48 +31,44 @@ struct m_variable_descr vars2[] = {
 
 int main()
 {
+	struct m_variable_table_manager *mgr = m_variable_table_manager_init();
 
-	/*
-	 *
-	 */
-	struct m_variable_table_manager mgr ;
-	m_variable_table_manager_init(&mgr);
+	size_t base = m_variable_descr_register(mgr, vars, sizeof(struct test_struct));
+	size_t base2 = m_variable_descr_register(mgr, vars2, sizeof(struct test_struct2));
 
 
-	/*
-	 *
-	 */
-	size_t base = m_variable_descr_register(&mgr, vars, sizeof(struct test_struct));
-	size_t base2 = m_variable_descr_register(&mgr, vars2, sizeof(struct test_struct2));
-	struct m_variable_table *table = m_variable_table_new(&mgr);
+	struct m_variable_table *table = m_variable_table_new(mgr);
 
+	m_variable_table_zero(table);
+	m_variable_table_print(table);
 
-	struct test_struct *p = table->base + base;
+	VAR_TABLE_2_STRUCT(struct test_struct, p, table, base);
 	p->uint32 = 32;
 	strcpy(p->array32, "abc"); 
+	p->array32_len = 3;
 	p->pointer = p->array32;
+	p->pointer_len = 3;
 
-	struct test_struct2 *p2 = table->base + base2;
+	VAR_TABLE_2_STRUCT(struct test_struct2, p2, table, base2);
 	p2->uint8 = 145;
 
 	m_variable_table_print(table);
 	printf("\n");
+
+	m_variable_descr_unregister(mgr, vars);
+
+	m_variable_table_print(table);
+	printf("\n");
+	m_variable_table_zero(table);
 	m_variable_table_print(table);
 	printf("\n");
 
-	m_variable_descr_unregister(&mgr, vars);
+	m_variable_descr_unregister(mgr, vars2);
+
 	m_variable_table_print(table);
 	printf("\n");
 
-	m_variable_descr_unregister(&mgr, vars2);
-	m_variable_table_print(table);
-	printf("\n");
-
-
-	/*
-	 *
-	 */
-	m_variable_table_manager_clean(&mgr);
+	m_variable_table_manager_clean(mgr);
 
 	return 0;
 }

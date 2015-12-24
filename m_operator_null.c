@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include "m_log.h"
-#include "m_variable.h"
+#include "m_variable_table.h"
 #include "m_operation.h"
 #include "m_operator_null.h"
 
-int m_operator_null_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
+int m_operator_null_init(struct m_variable_descr *descr, const char *option, const char *value, struct m_operation *operation)
 {
 	(void)option;
 	(void)value;
 
 	int eno = 0;
 
-	operation->op = &operator_null;
-	operation->var = var;
+	operation->op = &m_operator_null;
+	operation->descr = descr;
 
-	switch(var->real_type) {
+	switch(descr->real_type) {
 	case MRT_UINT8:
 	case MRT_UINT16:
 	case MRT_UINT32:
@@ -38,30 +38,31 @@ int m_operator_null_init(struct m_variable *var, const char *option, const char 
 err:
 	switch(eno) {
 	case -1:
-		ERROR("null do not support type %s now", m_real_type_2_str(var->real_type));
+		ERROR("null do not support type %s now", m_variable_real_type_2_str(descr->real_type));
 		break;
 	}
 
 	return -1;
 }
 
-int m_operator_null_value(struct m_operation *operation)
+int m_operator_null_value(struct m_operation *operation, struct m_variable_table *table)
 {
 	void *p = NULL;
-	size_t *plen = NULL;
+	size_t *plen = 0;
 
-	switch(operation->var->store_type) {
-	case MST_ADDRESS:
-		p = operation->var->var_addr;
+	struct m_variable_descr *descr = operation->descr;
+	switch(descr->store_type) {
+	case MST_MEMORY:
+		p = table->base + descr->var_offset;
 		break;
-	case MST_POINTER_ADDRESS:
-		p = *(void **)(operation->var->var_addr);
+	case MST_ADDRESS:
+		p = *(void **)(table->base + descr->var_offset);
 		break;
 	}
 
-	plen = operation->var->var_len;
+	plen = table->base + descr->var_len_offset;
 
-	switch(operation->var->real_type) {
+	switch(operation->descr->real_type) {
 	case MRT_UINT8:
 		return (p == NULL) || (*(uint8_t *)p == 0);
 		break;
@@ -103,7 +104,7 @@ void m_operator_null_clean(struct m_operation *operation)
 	return;
 }
 
-struct m_operator operator_null = {
+struct m_operator m_operator_null = {
 	.name = "null",
 	.init = m_operator_null_init,
 	.clean = m_operator_null_clean,

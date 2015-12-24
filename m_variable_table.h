@@ -36,25 +36,16 @@ struct m_variable_descr {
 	size_t var_len_offset;
 };
 
-#define M_VARIABLE_DESCR_LIST_NULL    {NULL, NULL}
+struct m_variable_table_manager;
 
-struct m_variable_descr_list {
-	struct m_variable_descr_list *prev;
-	struct m_variable_descr_list *next;
-};
-
-
-struct m_variable_table_manager {
-	size_t size;
-	struct m_variable_descr_list head;
-};
+#define VAR_TABLE_2_STRUCT(TYPE, NAME, TABLE, BASE) TYPE *NAME = (TYPE *)(TABLE->base + BASE)
 
 struct m_variable_table {
-	struct m_variable_table_manager *manager;
 	void *base;
+	struct m_variable_table_manager *manager;
 };
 
-int m_variable_table_manager_init(struct m_variable_table_manager *manager);
+struct m_variable_table_manager *m_variable_table_manager_init();
 void m_variable_table_manager_clean(struct m_variable_table_manager *manager);
 
 size_t m_variable_descr_register(struct m_variable_table_manager *manager, struct m_variable_descr vars[], size_t size);
@@ -62,6 +53,7 @@ void m_variable_descr_unregister(struct m_variable_table_manager *manager, struc
 
 struct m_variable_table * m_variable_table_new(struct m_variable_table_manager *manager);
 void m_variable_table_free(struct m_variable_table *table);
+void m_variable_table_zero(struct m_variable_table *table);
 
 void m_variable_table_print(struct m_variable_table *table);
 const char *m_variable_real_type_2_str(enum m_var_real_type type);
