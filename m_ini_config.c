@@ -146,11 +146,16 @@ int m_ini_config_read(const char *filename, struct m_ini_config_descr descr[])
 	for(d = descr; d->addr != NULL; d++) {
 		value = ini_get_value(ini, d->section, d->key);
 		if(value == NULL) {
+			if(d->necessary) {
+				eno = -2;
+				goto err;
+			}
+
 			value = d->default_value;
 		}
 
 		if(convert_value(value, d) != 0) {
-			eno  = -2;
+			eno  = -3;
 			goto err;
 		}
 	}
@@ -163,6 +168,10 @@ int m_ini_config_read(const char *filename, struct m_ini_config_descr descr[])
 err:
 	switch(eno) {
 	case -2:
+		ERROR("can not find %s in %s, which must configed \n", 
+				descr->section, descr->key);
+		break;
+	case -3:
 		ERROR("parse value:%s error on file :%s section:%s key: %s, "
 				"consist of illegal char or string|integer overflow \n", 
 				filename, value, descr->section, descr->key);
@@ -221,6 +230,7 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 {
 	assert(config);
 
+	int eno = 0;
 	char *value = NULL;
 	struct section *section = NULL;
 	struct m_ini_config_descr *d = NULL;
@@ -235,10 +245,16 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 	for(d = descr; d->addr != NULL; d++) {
 		value = ini_get_value_in_section(section, d->key);
 		if(value == NULL) {
+			if(d->necessary) {
+				eno = -1;
+				goto err;
+			}
+
 			value = d->default_value;
 		}
 
 		if(convert_value(value, d) != 0) {
+			eno = -2;
 			goto err;
 		}
 
@@ -247,9 +263,16 @@ int m_ini_config_next(struct m_ini_config *config, struct m_ini_config_descr des
 	return 1;
 
 err:
-	ERROR("parse value:%s error on key: %s, "
-			"consist of illegal char or string|integer overflow \n", 
-			value, d->key);
+	switch(eno) {
+	case -1:
+		ERROR("can not find %s, which must configed \n", d->key);
+		break;
+	case -2:
+		ERROR("parse value:%s error on key: %s, "
+				"consist of illegal char or string|integer overflow \n", 
+				value, d->key);
+		break;
+	}
 	return -1;
 }
 

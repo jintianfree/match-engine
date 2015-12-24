@@ -1,8 +1,5 @@
-#include <stdint.h>
-#include <string.h>
-#include <assert.h>
-#include "m_variable_table.h"
-#include "m_logic_operation.h"
+
+#include "../m_rule.c"
 
 struct test_struct {
 	uint32_t var1;
@@ -11,7 +8,6 @@ struct test_struct {
 	char *var3;
 	size_t var3_len;
 };
-
 
 int main()
 {
@@ -33,25 +29,15 @@ int main()
 
 	VAR_TABLE_2_STRUCT(struct test_struct, p, table, base);
 
-	struct m_logic_operation *logic_op = NULL;
-	logic_op = m_logic_operation_init("equal(var1:2)&equal(var2:abc)&!null(var3)", mgr);
-	m_logic_operation_value(logic_op, table);
+	struct m_rule_list *head = m_rule_init("rule.ini", mgr);
 
-	p->var1 = 2;
-	assert(m_logic_operation_value(logic_op, table) == 0);
+	int i = 0;
 
-	strcpy(p->var2, "abc");
-	p->var2_len = 3;
-	assert(m_logic_operation_value(logic_op, table) == 0);
+	while(i++ < 10) {
+		p->var1 = i;
+		printf("==== %d \n", m_rule_match(head, table));
+	}
 
-	p->var3 = p->var2;
-	p->var3_len = 3;
-	assert(m_logic_operation_value(logic_op, table) == 1);
-
-	m_logic_operation_clean(logic_op);
-
-	m_variable_descr_unregister(mgr, descrs);
-	m_variable_table_manager_clean(mgr);
 
 	return 0;
 }

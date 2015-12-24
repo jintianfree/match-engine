@@ -13,13 +13,14 @@ enum m_ini_config_value_type {
 #define MAX_INI_CONFIG_SECTION_LEN			32
 #define MAX_INI_CONFIG_KEY_LEN				32
 #define MAX_INI_CONFIG_DEFAULT_VALUE_LEN		512
-#define M_INI_CONFIG_DESCR_NULL				{"", "", NULL, 0, 0, ""}
+#define M_INI_CONFIG_DESCR_NULL				{"", "", NULL, 0, 0, 0, ""}
 struct m_ini_config_descr {
 	char section[MAX_INI_CONFIG_SECTION_LEN];
 	char key[MAX_INI_CONFIG_KEY_LEN];
 	void *addr;
 	int max_len;
 	enum m_ini_config_value_type type;
+	int necessary;	/* 1 -- must config this value; 0 -- use default value if not configed. */
 	char default_value[MAX_INI_CONFIG_DEFAULT_VALUE_LEN];
 };
 

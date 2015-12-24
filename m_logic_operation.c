@@ -1,4 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
+#include "m_log.h"
 #include "m_operation.h"
 #include "m_logic_expression.h"
 #include "m_logic_operation.h"
@@ -54,11 +58,29 @@ struct m_sentence_handle handle = {
 };
 
 
-int m_logic_operation_init(struct m_logic_operation *mlo, const char *exp, struct m_variable_table_manager *manager)
-{
-	assert(mlo && exp && manager);
+struct m_logic_operation {
+	struct m_logic_expression exp;
+};
 
-	return m_logic_expression_init(&mlo->exp, &handle, exp, manager);
+struct m_logic_operation *m_logic_operation_init(const char *exp, struct m_variable_table_manager *manager)
+{
+	assert(exp && manager);
+
+	struct m_logic_operation *mlo = NULL;
+	
+	if((mlo = malloc(sizeof(struct m_logic_operation))) == NULL) {
+		goto err;
+	}
+
+	if(m_logic_expression_init(&mlo->exp, &handle, exp, manager) != 0) {
+		goto err;
+	}
+
+	return mlo;
+err:
+	ERROR("m_logic_operation_init error \n");
+	return NULL;
+
 }
 
 int m_logic_operation_value(struct m_logic_operation *mlo, struct m_variable_table *table)
@@ -73,6 +95,8 @@ void m_logic_operation_clean(struct m_logic_operation *mlo)
 	assert(mlo);
 
 	m_logic_expression_clean(&mlo->exp);
+
+	free(mlo);
 
 	return;
 }

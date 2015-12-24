@@ -58,12 +58,12 @@ int main()
 	char value6 = 0;
 
 	struct m_ini_config_descr descr[] = {
-		{"section1", "value1", value1,  16,  ICVT_STRING, "default value1"},
-		{"section1", "value2", &value2, 0,   ICVT_INT,    "2"},
-		{"section1", "value3", &value3, 0,   ICVT_UINT,   "3"},
-		{"section1", "value4", &value4, 0,   ICVT_LONG,   "4"},
-		{"section1", "value5", &value5, 0,   ICVT_ULONG,  "5"},
-		{"section1", "value6", &value6, 0,   ICVT_BOOL,   "Yes"},
+		{"section1", "value1", value1,  16,  ICVT_STRING, 0, "default value1"},
+		{"section1", "value2", &value2, 0,   ICVT_INT,    0, "2"},
+		{"section1", "value3", &value3, 0,   ICVT_UINT,   0, "3"},
+		{"section1", "value4", &value4, 0,   ICVT_LONG,   0, "4"},
+		{"section1", "value5", &value5, 0,   ICVT_ULONG,  0, "5"},
+		{"section1", "value6", &value6, 0,   ICVT_BOOL,   0, "Yes"},
 		M_INI_CONFIG_DESCR_NULL
 	};
 
