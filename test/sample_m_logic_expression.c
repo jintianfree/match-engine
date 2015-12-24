@@ -120,8 +120,9 @@ int parse_sentence_func(const char *sentence, union sentence_info *info, void *a
 	return 0;
 }
 
-int sentence_value_func(union sentence_info *info)
+int sentence_value_func(union sentence_info *info, void *arg)
 {
+	(void)arg;
 	struct op_info *opi = (struct op_info *)info->data;
 	return opi->op_func(opi->var->var_addr, *(opi->var->var_len), opi->value_addr, opi->value_len);
 }
@@ -152,10 +153,10 @@ int main()
 	strcpy(string_var, "123");
 	string_var_len = strlen(string_var);
 
-	m_logic_expression_evaluate(&exp);
+	m_logic_expression_evaluate(&exp, NULL);
 
 	int_var = 1;
-	m_logic_expression_evaluate(&exp);
+	m_logic_expression_evaluate(&exp, NULL);
 	m_logic_expression_clean(&exp);
 	return 0;
 }

@@ -5,7 +5,7 @@
 #include <errno.h>
 #include "m_log.h"
 #include "m_common.h"
-#include "m_variable.h"
+#include "m_variable_table.h"
 #include "m_operation.h"
 #include "m_operator_equal.h"
 
@@ -157,7 +157,7 @@ err:
 	return (void *)-1;
 }
 
-int m_operator_equal_init_int(struct m_variable *var, const char *value, struct m_operation *operation)
+int m_operator_equal_init_int(struct m_variable_descr *descr, const char *value, struct m_operation *operation)
 {
 	int eno = 0;
 	char *end = NULL;
@@ -183,7 +183,7 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 	}
 
 	errno = 0;
-	switch(var->real_type) {
+	switch(descr->real_type) {
 	case MRT_UINT8:
 	case MRT_UINT16:
 	case MRT_UINT32:
@@ -209,7 +209,7 @@ int m_operator_equal_init_int(struct m_variable *var, const char *value, struct 
 		goto err;
 	}
 
-	switch(var->real_type) {
+	switch(descr->real_type) {
 	case MRT_UINT8:
 		if(ulli > UINT8_MAX) {
 			eno = -2;
@@ -265,7 +265,7 @@ err:
 		ERROR("parse value (%s) error \n", value);
 		break;
 	case -2:
-		ERROR("value (%s) overflow  type (%s) \n", value, m_real_type_2_str(var->real_type));
+		ERROR("value (%s) overflow  type (%s) \n", value, m_variable_real_type_2_str(descr->real_type));
 		break;
 	}
 
@@ -277,7 +277,7 @@ err:
 	return -1;
 }
 
-int m_operator_equal_init(struct m_variable *var, const char *option, const char *value, struct m_operation *operation)
+int m_operator_equal_init(struct m_variable_descr *descr, const char *option, const char *value, struct m_operation *operation)
 {
 	int eno = 0;
 	int len = 0;
@@ -289,10 +289,10 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 		goto err;
 	}
 
-	operation->op = &operator_equal;
-	operation->var = var;
+	operation->op = &m_operator_equal;
+	operation->descr = descr;
 
-	switch(var->real_type) {
+	switch(descr->real_type) {
 	case MRT_UINT8:
 	case MRT_INT8:
 	case MRT_UINT16:
@@ -301,7 +301,7 @@ int m_operator_equal_init(struct m_variable *var, const char *option, const char
 	case MRT_INT32:
 	case MRT_UINT64:
 	case MRT_INT64:
-		if(m_operator_equal_init_int(var, value, operation) != 0) {
+		if(m_operator_equal_init_int(descr, value, operation) != 0) {
 			eno = -2;
 			goto err;
 		}
@@ -392,7 +392,7 @@ err:
 		ERROR("malloc error @%s:%d \n", __func__, __LINE__);
 		break;
 	case -4:
-		ERROR("equal do not support type %s now", m_real_type_2_str(var->real_type));
+		ERROR("equal do not support type %s now", m_variable_real_type_2_str(descr->real_type));
 		break;
 	case -5:
 		ERROR("MRT_BYTES do not support I or B option (%s) \n", option);
@@ -402,18 +402,19 @@ err:
 	return -1;
 }
 
-int m_operator_equal_value(struct m_operation *operation)
+int m_operator_equal_value(struct m_operation *operation, struct m_variable_table *table)
 {
 	void *p = NULL;
-	size_t plen = 0;
+	size_t *plen = 0;
+	size_t len = 0;
 	struct equal_operator_option *option = NULL;
 
-	switch(operation->var->store_type) {
-	case MST_ADDRESS:
-		p = operation->var->var_addr;
+	switch(operation->descr->store_type) {
+	case MST_MEMORY:
+		p = table->base + operation->descr->var_offset;
 		break;
-	case MST_POINTER_ADDRESS:
-		p = *(void **)(operation->var->var_addr);
+	case MST_ADDRESS:
+		p = *(void **)(table->base + operation->descr->var_offset);
 		break;
 	}
 
@@ -421,11 +422,9 @@ int m_operator_equal_value(struct m_operation *operation)
 		return 0;
 	}
 
-	if(operation->var->var_len) {
-		plen = *(operation->var->var_len);
-	}   
-
-	switch(operation->var->real_type) {
+	plen = table->base + operation->descr->var_len_offset;
+	
+	switch(operation->descr->real_type) {
 	case MRT_UINT8:
 	case MRT_INT8:
 		return *((uint8_t *)(p)) == (uint8_t)(operation->value_i);
@@ -444,48 +443,50 @@ int m_operator_equal_value(struct m_operation *operation)
 		break;
 	case MRT_STRING:	
 		option = (struct equal_operator_option *)operation->operator_option;
+		len = *plen;
 		if(option) {
 			size_t start = option->start;
-			size_t end = option->end == 0 ? plen : (size_t)option->end;
+			size_t end = option->end == 0 ? len : (size_t)option->end;
 
-			if(start > plen || end > plen) {
+			if(start > len || end > len) {
 				return 0;
 			}
 
 			p += start;
-			plen = (end - start);
+			len = (end - start);
 		}
 
-		if(plen != operation->value_len) {
+		if(len != operation->value_len) {
 			return 0;
 		}
 
 		if(option && option->ignore_case) {
-			return (strncasecmp((char *)p, (char *)operation->value_p, plen) == 0);
+			return (strncasecmp((char *)p, (char *)operation->value_p, len) == 0);
 		} else {
-			return (strncmp((char *)p, (char *)operation->value_p, plen) == 0);
+			return (strncmp((char *)p, (char *)operation->value_p, len) == 0);
 		}
 
 		break;
 	case MRT_BYTES:
 		option = (struct equal_operator_option *)operation->operator_option;
+		len = *plen;
 		if(option) {
 			size_t start = option->start;
-			size_t end = option->end == 0 ? plen : (size_t)option->end;
+			size_t end = option->end == 0 ? len : (size_t)option->end;
 
-			if(start > plen || end > plen) {
+			if(start > len || end > len) {
 				return 0;
 			}
 
 			p += start;
-			plen = (end - start);
+			len = (end - start);
 		}
 
-		if(plen != operation->value_len) {
+		if(len != operation->value_len) {
 			return 0;
 		}
 
-		return (memcmp(p, operation->value_p, plen) == 0);
+		return (memcmp(p, operation->value_p, len) == 0);
 
 		break;
 	default:
@@ -497,7 +498,7 @@ int m_operator_equal_value(struct m_operation *operation)
 
 void m_operator_equal_clean(struct m_operation *operation)
 {
-	switch(operation->var->real_type) {
+	switch(operation->descr->real_type) {
 	case MRT_STRING:
 	case MRT_BYTES:
 		if(operation->value_p) {
@@ -509,7 +510,7 @@ void m_operator_equal_clean(struct m_operation *operation)
 		break;
 	}
 
-	operation->var = NULL;
+	operation->descr = NULL;
 	operation->op = NULL;
 	operation->value_i = 0;
 
@@ -519,7 +520,7 @@ void m_operator_equal_clean(struct m_operation *operation)
 	}
 }
 
-struct m_operator operator_equal = {
+struct m_operator m_operator_equal = {
 	.name = "equal",
 	.init = m_operator_equal_init,
 	.clean = m_operator_equal_clean,

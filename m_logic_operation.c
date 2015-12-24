@@ -6,9 +6,9 @@
 int parse_sentence_func(const char *sentence, union sentence_info *info, void *arg)
 {
 	struct m_operation *mop = NULL;	
-	struct m_variable_list *head = (struct m_variable_list *)arg;
+	struct m_variable_table_manager *manager = (struct m_variable_table_manager *)arg;
 
-	if((mop = m_operation_init(sentence, head)) == NULL) {
+	if((mop = m_operation_init(sentence, manager)) == NULL) {
 		return -1;
 	}
 
@@ -18,16 +18,18 @@ int parse_sentence_func(const char *sentence, union sentence_info *info, void *a
 }
 	
 
-int sentence_value_func(union sentence_info *info)
+int sentence_value_func(union sentence_info *info, void *arg)
 {
 	int value = 0;
 	struct m_operation *mop = NULL;	
+	struct m_variable_table *table = NULL;
 
-	assert(info->data);
+	assert(info->data && arg);
 
 	mop = (struct m_operation *)info->data;
+	table = (struct m_variable_table *)arg;
 
-	value = m_operation_value(mop);
+	value = m_operation_value(mop, table);
 
 	return value;
 }
@@ -52,18 +54,18 @@ struct m_sentence_handle handle = {
 };
 
 
-int m_logic_operation_init(struct m_logic_operation *mlo, const char *exp, struct m_variable_list *head)
+int m_logic_operation_init(struct m_logic_operation *mlo, const char *exp, struct m_variable_table_manager *manager)
 {
-	assert(mlo && exp && head);
+	assert(mlo && exp && manager);
 
-	return m_logic_expression_init(&mlo->exp, &handle, exp, head);
+	return m_logic_expression_init(&mlo->exp, &handle, exp, manager);
 }
 
-int m_logic_operation_value(struct m_logic_operation *mlo)
+int m_logic_operation_value(struct m_logic_operation *mlo, struct m_variable_table *table)
 {
 	assert(mlo);
 
-	return m_logic_expression_evaluate(&mlo->exp);
+	return m_logic_expression_evaluate(&mlo->exp, table);
 }
 
 void m_logic_operation_clean(struct m_logic_operation *mlo)

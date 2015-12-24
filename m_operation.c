@@ -3,19 +3,19 @@
 #include <string.h>
 #include <assert.h>
 #include "m_log.h"
-#include "m_variable.h"
+#include "m_variable_table.h"
 #include "m_operation.h"
 #include "m_operator_equal.h"
 #include "m_operator_null.h"
 
 struct m_operator *operators[] = {
-	&operator_equal,
-	&operator_null,
+	&m_operator_equal,
+	&m_operator_null,
 	NULL,
 };
 
 /* operator(var_name[option]:value) */
-struct m_operation *m_operation_init(const char *str, struct m_variable_list *head)
+struct m_operation *m_operation_init(const char *str, struct m_variable_table_manager *manager)
 {
 	int eno = 0;
 	char *p = NULL;
@@ -24,7 +24,7 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 	char *value = NULL;
 	char *option = NULL;
 
-	struct m_variable *var = NULL;
+	struct m_variable_descr *descr = NULL;
 	struct m_operation *operation = NULL;
 
 	assert(str);
@@ -95,7 +95,7 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 		goto err;
 	}
 
-	if((var = m_variable_name_2_var(head, var_name)) == NULL) {
+	if((descr = m_variable_descr_find_by_name(manager, var_name)) == NULL) {
 		eno  = -4;
 		goto err;
 	}
@@ -106,7 +106,7 @@ struct m_operation *m_operation_init(const char *str, struct m_variable_list *he
 	}
 
 	
-	if((*operator)->init(var, option, value, operation) != 0) {
+	if((*operator)->init(descr, option, value, operation) != 0) {
 		eno = -6;
 		goto err;
 	}
@@ -162,11 +162,11 @@ err:
 	return NULL;
 }
 
-int m_operation_value(struct m_operation *operation)
+int m_operation_value(struct m_operation *operation, struct m_variable_table *table)
 {
-	assert(operation && operation->op);
+	assert(operation && operation->op && table);
 
-	return operation->op->value(operation);
+	return operation->op->value(operation, table);
 }
 
 void m_operation_clean(struct m_operation *operation)

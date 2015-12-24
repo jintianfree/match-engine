@@ -18,8 +18,9 @@ int parse_sentence_func(const char *sentence, union sentence_info *info, void *a
 	return 0;
 }
 
-int sentence_value_func(union sentence_info *info)
+int sentence_value_func(union sentence_info *info, void *arg)
 {
+	(void)arg;
 	return (info->data != NULL);
 }
 
@@ -91,7 +92,7 @@ int main()
 	int i = 0;
 	while(right_expression[i].expression != NULL) {
 		assert(m_logic_expression_init(&exp, &handle, right_expression[i].expression, NULL) == 0);
-		assert(m_logic_expression_evaluate(&exp) == right_expression[i].value);
+		assert(m_logic_expression_evaluate(&exp, NULL) == right_expression[i].value);
 		m_logic_expression_clean(&exp);
 		i++;
 	}

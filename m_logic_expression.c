@@ -556,7 +556,7 @@ static int clean_sentence(struct m_binary_tree_node *node, void *arg)
 }
 
 static int m_logic_sentence_evaluate(struct m_binary_tree_node *node, 
-		sentence_value func)
+		sentence_value func, void *arg)
 {
 	assert(node);
 
@@ -566,21 +566,21 @@ static int m_logic_sentence_evaluate(struct m_binary_tree_node *node,
 	struct m_logic_sentence *s = (struct m_logic_sentence *)node;
 
 	if(m_binary_tree_is_leaf_node(&s->node)) {
-		value = func(&s->info);
+		value = func(&s->info, arg);
 		DEBUG("%s = %d \n", s->sentence, value);
 		goto end;
 	}
 
 	if(s->info.op == '!') {
 		assert(s->node.left == NULL);
-		right_value = m_logic_sentence_evaluate(s->node.right, func);
+		right_value = m_logic_sentence_evaluate(s->node.right, func, arg);
 
 		value = !right_value;
 		DEBUG("! %d = %d\n", right_value, value);
 		goto end;
 	}
 
-	left_value = m_logic_sentence_evaluate(s->node.left, func);
+	left_value = m_logic_sentence_evaluate(s->node.left, func, arg);
 
 	if(s->info.op == '&' && left_value == 0) {
 		value = 0;
@@ -594,7 +594,7 @@ static int m_logic_sentence_evaluate(struct m_binary_tree_node *node,
 
 	assert(s->node.right);
 
-	right_value = m_logic_sentence_evaluate(s->node.right, func);
+	right_value = m_logic_sentence_evaluate(s->node.right, func, arg);
 
 	if(s->info.op == '&') {
 		value = left_value & right_value;
@@ -666,13 +666,13 @@ void m_logic_expression_clean(struct m_logic_expression *lexp)
 	return;
 }
 
-int m_logic_expression_evaluate(struct m_logic_expression *lexp)
+int m_logic_expression_evaluate(struct m_logic_expression *lexp, void *arg)
 {
 	assert(lexp && lexp->root && lexp->handle);
 
 	int value = 0;
 
-	value = m_logic_sentence_evaluate(&lexp->root->node, lexp->handle->value);
+	value = m_logic_sentence_evaluate(&lexp->root->node, lexp->handle->value, arg);
 
 	return value;
 }
